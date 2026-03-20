@@ -6,6 +6,8 @@ import Players from './pages/Players';
 import Stats from './pages/Stats';
 import Standings from './pages/Standings';
 import Playoffs from './pages/Playoffs';
+import GameRecap from './pages/GameRecap';
+import Fantasy from './pages/Fantasy';
 import { team, skaters, goalies, schedule, gameLog, playoffSchedule, playoffGameLog } from './data';
 
 const PAGES = [
@@ -15,6 +17,7 @@ const PAGES = [
   { key: 'Stats',     label: 'Stats' },
   { key: 'Standings', label: 'Standings' },
   { key: 'Playoffs',  label: '🏆 Playoffs' },
+  { key: 'Fantasy',   label: '🏒 Fantasy'  },
 ];
 
 const teamData = { team, skaters, goalies, schedule, gameLog, playoffSchedule, playoffGameLog };
@@ -22,6 +25,7 @@ const teamData = { team, skaters, goalies, schedule, gameLog, playoffSchedule, p
 
 export default function App() {
   const [page, setPage]         = useState('Dashboard');
+  const [gameDate, setGameDate] = useState(null);
   const [darkMode, setDarkMode] = useState(
     () => localStorage.getItem('theme') !== 'light'
   );
@@ -34,11 +38,13 @@ export default function App() {
   const renderPage = () => {
     switch (page) {
       case 'Dashboard':  return <Dashboard onNav={setPage} teamData={teamData} />;
-      case 'Schedule':   return <Schedule teamData={teamData} />;
+      case 'Schedule':   return <Schedule teamData={teamData} onGameRecap={date => { setGameDate(date); setPage('GameRecap'); }} />;
       case 'Players':    return <Players teamData={teamData} />;
       case 'Stats':      return <Stats teamData={teamData} />;
       case 'Standings':  return <Standings teamData={teamData} />;
       case 'Playoffs':   return <Playoffs />;
+      case 'GameRecap':  return <GameRecap gameDate={gameDate} onBack={() => setPage('Schedule')} teamData={teamData} />;
+      case 'Fantasy':    return <Fantasy teamData={teamData} />;
       default:           return <Dashboard onNav={setPage} teamData={teamData} />;
     }
   };

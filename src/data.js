@@ -69,7 +69,15 @@ export const schedule = [
   { id: 14, date: "2026-03-12", time: "19:00", tz: "America/Toronto",  opponent: "Tigres",     home: false, gf: 4, ga: 1, result: "W"        },
   { id: 15, date: "2026-03-13", time: "19:00", tz: "America/Toronto",  opponent: "Olympiques", home: false, gf: 3, ga: 1, result: "W"        },
   { id: 16, date: "2026-03-15", time: "15:00", tz: "America/Toronto",  opponent: "Phoenix",    home: true,  gf: 1, ga: 4, result: "L"        },
-  { id: 17, date: "2026-03-20", time: "19:00", tz: "America/Toronto",  opponent: "Saguenéens", home: true,  gf: null, ga: null, result: "upcoming" },
+  { id: 17, date: "2026-03-20", time: "19:00", tz: "America/Toronto",  opponent: "Saguenéens", home: true,  gf: null, ga: null, result: "upcoming",
+    scratches: [
+      { num: 19, reason: 'HS' },   // Brady — Healthy Scratch
+      { num: 13, reason: 'IR' },   // Karabaev — Injured
+      { num: 73, reason: 'IR' },   // Lelièvre — Injured
+      { num: 63, reason: 'SUS' },  // Rousseau-Hamel — Suspended (1/1)
+      { num: 77, reason: 'IR' },   // Taillefer — Injured
+    ]
+  },
   { id: 18, date: "2026-03-21", time: "16:00", tz: "America/Toronto",  opponent: "Saguenéens", home: false, gf: null, ga: null, result: "upcoming" },
 ];
 

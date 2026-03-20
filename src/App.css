@@ -1381,6 +1381,497 @@ tr:hover td { background: #1e1e1e; }
 }
 .theme-toggle:hover { border-color: rgba(255,255,255,0.6); color: #fff; }
 
+/* ══════════════════════════════════════════════════════
+   AUTH MODAL
+   ══════════════════════════════════════════════════════ */
+.auth-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.75);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 999;
+  padding: 1rem;
+  backdrop-filter: blur(4px);
+}
+.auth-modal {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-top: 4px solid var(--red);
+  border-radius: 12px;
+  padding: 2rem 2rem 1.75rem;
+  width: 100%;
+  max-width: 400px;
+  position: relative;
+  box-shadow: 0 20px 60px rgba(0,0,0,0.6);
+}
+.auth-close {
+  position: absolute;
+  top: 0.85rem;
+  right: 0.85rem;
+  background: none;
+  border: none;
+  color: var(--muted);
+  font-size: 1rem;
+  cursor: pointer;
+  line-height: 1;
+  padding: 0.25rem;
+  transition: color 0.15s;
+}
+.auth-close:hover { color: var(--text); }
+.auth-logo {
+  font-size: 2rem;
+  text-align: center;
+  margin-bottom: 0.4rem;
+}
+.auth-title {
+  font-size: 1.3rem;
+  font-weight: 900;
+  text-align: center;
+  color: var(--text);
+  margin-bottom: 0.2rem;
+}
+.auth-sub {
+  font-size: 0.8rem;
+  color: var(--muted);
+  text-align: center;
+  margin-bottom: 1.5rem;
+}
+.auth-field {
+  margin-bottom: 1rem;
+}
+.auth-field label {
+  display: block;
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--muted);
+  margin-bottom: 0.35rem;
+}
+.auth-field input {
+  width: 100%;
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: 7px;
+  color: var(--text);
+  font-size: 0.9rem;
+  padding: 0.6rem 0.85rem;
+  outline: none;
+  transition: border-color 0.15s;
+  font-family: inherit;
+}
+.auth-field input:focus { border-color: var(--red); }
+.auth-error {
+  background: rgba(204,0,0,0.12);
+  border: 1px solid rgba(204,0,0,0.35);
+  border-radius: 7px;
+  color: #ff7070;
+  font-size: 0.82rem;
+  padding: 0.55rem 0.85rem;
+  margin-bottom: 1rem;
+}
+.auth-submit {
+  width: 100%;
+  background: var(--red);
+  border: none;
+  border-radius: 8px;
+  color: #fff;
+  font-weight: 800;
+  font-size: 0.9rem;
+  padding: 0.75rem;
+  cursor: pointer;
+  transition: background 0.15s;
+  margin-bottom: 1.1rem;
+  font-family: inherit;
+  letter-spacing: 0.02em;
+}
+.auth-submit:hover:not(:disabled) { background: var(--red-dark); }
+.auth-submit:disabled { opacity: 0.55; cursor: not-allowed; }
+.auth-switch {
+  font-size: 0.82rem;
+  color: var(--muted);
+  text-align: center;
+}
+.auth-switch button {
+  background: none;
+  border: none;
+  color: var(--red);
+  font-weight: 700;
+  cursor: pointer;
+  font-size: inherit;
+  padding: 0 0.15rem;
+  font-family: inherit;
+  text-decoration: underline;
+}
+
+/* ══════════════════════════════════════════════════════
+   FANTASY HOCKEY
+   ══════════════════════════════════════════════════════ */
+.fant-auth-bar {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  padding: 0.5rem 0 0.75rem;
+  border-bottom: 1px solid var(--border);
+  margin-bottom: 0.5rem;
+}
+.fant-user-row {
+  display: flex;
+  align-items: center;
+  gap: 0.85rem;
+}
+.fant-username {
+  font-size: 0.82rem;
+  color: var(--muted);
+  font-weight: 600;
+}
+.fant-signout-btn {
+  background: none;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  color: var(--muted);
+  font-size: 0.75rem;
+  font-weight: 700;
+  padding: 0.3rem 0.7rem;
+  cursor: pointer;
+  transition: all 0.15s;
+  font-family: inherit;
+}
+.fant-signout-btn:hover { border-color: var(--red); color: var(--red); }
+.fant-signin-btn {
+  background: var(--red);
+  border: none;
+  border-radius: 8px;
+  color: #fff;
+  font-size: 0.82rem;
+  font-weight: 800;
+  padding: 0.5rem 1.1rem;
+  cursor: pointer;
+  transition: background 0.15s;
+  font-family: inherit;
+  letter-spacing: 0.02em;
+}
+.fant-signin-btn:hover { background: var(--red-dark); }
+
+/* Tab bar */
+.fant-tabs {
+  display: flex;
+  gap: 0.4rem;
+  margin-bottom: 1.25rem;
+  border-bottom: 2px solid var(--surface3);
+  padding-bottom: 0;
+}
+.fant-tab {
+  background: none;
+  border: none;
+  border-bottom: 3px solid transparent;
+  color: var(--muted);
+  font-weight: 700;
+  font-size: 0.82rem;
+  padding: 0.55rem 1rem 0.65rem;
+  cursor: pointer;
+  transition: all 0.15s;
+  font-family: inherit;
+  margin-bottom: -2px;
+  letter-spacing: 0.02em;
+}
+.fant-tab:hover { color: var(--text); }
+.fant-tab.active { color: var(--text); border-bottom-color: gold; }
+
+/* Tonight's game banner */
+.fant-game-banner {
+  display: flex;
+  align-items: center;
+  gap: 0.85rem;
+  background: rgba(0,166,81,0.08);
+  border: 1px solid rgba(0,166,81,0.25);
+  border-radius: 10px;
+  padding: 0.75rem 1rem;
+  margin-bottom: 1rem;
+}
+.fant-game-label {
+  font-size: 0.68rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--green);
+}
+.fant-game-opp {
+  font-weight: 700;
+  font-size: 0.95rem;
+}
+
+/* Slot counter */
+.fant-counter {
+  display: flex;
+  gap: 0.75rem;
+  margin-bottom: 1.25rem;
+}
+.fant-slot {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  background: var(--surface2);
+  border: 2px solid var(--border);
+  border-radius: 8px;
+  padding: 0.5rem 1rem;
+  min-width: 56px;
+  transition: all 0.15s;
+}
+.fant-slot.done {
+  background: rgba(0,166,81,0.1);
+  border-color: var(--green);
+}
+.fant-slot-num {
+  font-size: 1.2rem;
+  font-weight: 900;
+  color: var(--text);
+  line-height: 1;
+}
+.fant-slot.done .fant-slot-num { color: var(--green); }
+.fant-slot-pos {
+  font-size: 0.65rem;
+  font-weight: 800;
+  color: var(--muted);
+  letter-spacing: 0.06em;
+  margin-top: 0.15rem;
+}
+
+/* Section labels */
+.fant-section-label {
+  font-size: 0.72rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.07em;
+  color: var(--muted);
+  margin: 1.1rem 0 0.6rem;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+.fant-section-label::after {
+  content: '';
+  flex: 1;
+  height: 1px;
+  background: var(--border);
+}
+
+/* Player grid */
+.fant-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+  gap: 0.6rem;
+  margin-bottom: 0.5rem;
+}
+
+/* Player card */
+.fant-player-card {
+  position: relative;
+  background: var(--surface2);
+  border: 2px solid var(--border);
+  border-radius: 10px;
+  padding: 0.75rem 0.65rem 0.65rem;
+  cursor: pointer;
+  transition: all 0.15s;
+  text-align: center;
+  font-family: inherit;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.35rem;
+}
+.fant-player-card:hover:not(.maxed) {
+  border-color: var(--red);
+  background: var(--surface3);
+}
+.fant-player-card.sel {
+  background: rgba(204,0,0,0.1);
+  border-color: var(--red);
+}
+.fant-player-card.maxed {
+  opacity: 0.38;
+  cursor: not-allowed;
+}
+.fant-player-photo {
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  object-fit: cover;
+  object-position: top;
+  background: var(--surface3);
+}
+.fant-player-name {
+  font-size: 0.78rem;
+  font-weight: 700;
+  color: var(--text);
+  line-height: 1.2;
+}
+.fant-player-meta {
+  font-size: 0.65rem;
+  color: var(--muted);
+}
+.fant-check {
+  position: absolute;
+  top: 0.3rem;
+  right: 0.4rem;
+  font-size: 0.75rem;
+  color: var(--red);
+  font-weight: 900;
+}
+.fant-scratch-badge {
+  position: absolute;
+  top: 0.3rem;
+  right: 0.35rem;
+  font-size: 0.56rem;
+  font-weight: 900;
+  letter-spacing: 0.05em;
+  border-radius: 4px;
+  padding: 0.1rem 0.35rem;
+}
+.fant-scratch-hs  { background: rgba(153,153,153,0.18); color: #aaa; }
+.fant-scratch-ir  { background: rgba(232,119,34,0.18);  color: var(--orange); }
+.fant-scratch-sus { background: rgba(204,0,0,0.18);     color: var(--red); }
+
+/* Lock button */
+.fant-lock-wrap {
+  padding: 1.25rem 0 0.5rem;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.65rem;
+}
+.fant-scoring-key {
+  font-size: 0.73rem;
+  color: var(--muted);
+  text-align: center;
+}
+.fant-lock-btn {
+  background: var(--red);
+  border: none;
+  border-radius: 10px;
+  color: #fff;
+  font-weight: 900;
+  font-size: 1rem;
+  padding: 0.85rem 2.5rem;
+  cursor: pointer;
+  transition: background 0.15s;
+  font-family: inherit;
+  letter-spacing: 0.02em;
+  min-width: 260px;
+}
+.fant-lock-btn:hover:not(:disabled) { background: var(--red-dark); }
+.fant-lock-btn:disabled {
+  background: var(--surface3);
+  color: var(--muted);
+  cursor: not-allowed;
+}
+
+/* Banners */
+.fant-banner {
+  border-radius: 10px;
+  padding: 1.1rem 1.25rem;
+  font-weight: 700;
+  font-size: 0.95rem;
+  margin-bottom: 1rem;
+}
+.fant-banner-locked {
+  background: rgba(232,119,34,0.1);
+  border: 1px solid rgba(232,119,34,0.35);
+  color: var(--orange);
+}
+.fant-banner-success {
+  background: rgba(0,166,81,0.1);
+  border: 1px solid rgba(0,166,81,0.35);
+  color: var(--green);
+}
+
+/* Empty states */
+.fant-empty {
+  text-align: center;
+  padding: 3rem 1rem;
+  color: var(--muted);
+}
+.fant-empty-icon  { font-size: 2.8rem; margin-bottom: 0.75rem; }
+.fant-empty-title { font-size: 1rem; font-weight: 700; color: var(--text); margin-bottom: 0.4rem; }
+.fant-empty-sub   { font-size: 0.85rem; }
+.fant-loading     { text-align: center; padding: 2rem; color: var(--muted); font-size: 0.9rem; }
+
+/* My Lineups list */
+.fant-lineups-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.85rem;
+}
+.fant-lineup-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 1rem 1.1rem;
+}
+.fant-lineup-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 0.65rem;
+  gap: 0.5rem;
+}
+.fant-lineup-date {
+  font-weight: 700;
+  font-size: 0.88rem;
+}
+.fant-lineup-opp {
+  font-size: 0.78rem;
+  color: var(--muted);
+  margin-left: 0.45rem;
+}
+.fant-score-badge {
+  font-size: 0.82rem;
+  font-weight: 800;
+  background: var(--surface3);
+  border-radius: 20px;
+  padding: 0.2rem 0.7rem;
+  color: var(--muted);
+  white-space: nowrap;
+}
+.fant-score-badge.positive { background: rgba(0,166,81,0.15); color: var(--green); }
+.fant-score-badge.pending  { background: rgba(232,119,34,0.1); color: var(--orange); }
+
+/* Player chips */
+.fant-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+}
+.fant-chip {
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: 20px;
+  font-size: 0.72rem;
+  font-weight: 600;
+  padding: 0.2rem 0.6rem;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+}
+.fant-chip-pos {
+  font-size: 0.6rem;
+  font-weight: 800;
+  color: var(--red);
+  letter-spacing: 0.04em;
+}
+
+/* Light mode overrides */
+[data-theme="light"] .fant-player-card  { background: var(--surface); }
+[data-theme="light"] .fant-player-card:hover:not(.maxed) { background: var(--surface2); }
+[data-theme="light"] .fant-player-card.sel { background: rgba(204,0,0,0.06); }
+[data-theme="light"] .fant-slot        { background: var(--surface); }
+[data-theme="light"] .fant-chip        { background: var(--surface2); }
+[data-theme="light"] .fant-lineup-card { background: var(--surface); }
+[data-theme="light"] .auth-modal       { background: var(--surface); }
+[data-theme="light"] .auth-field input { background: var(--surface2); color: var(--text); }
+
 /* ── RESPONSIVE ──────────────────────────────────────── */
 @media (max-width: 768px) {
   .stat-grid-4 { grid-template-columns: repeat(2, 1fr); }
@@ -1397,4 +1888,7 @@ tr:hover td { background: #1e1e1e; }
   .team-pill { padding: 0.25rem 0.6rem; font-size: 0.65rem; }
   .profile-name { font-size: 1.4rem; }
   .profile-hero { flex-direction: column; text-align: center; gap: 1rem; }
+  .fant-grid { grid-template-columns: repeat(auto-fill, minmax(130px, 1fr)); }
+  .fant-lock-btn { min-width: unset; width: 100%; }
+  .fant-tabs { overflow-x: auto; }
 }

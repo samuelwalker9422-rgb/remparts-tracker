@@ -26,7 +26,7 @@ function fmtGameTime(time, tz) {
   return `${h12}${mins} ${ampm} ${TZ_LABEL[tz] ?? tz}`;
 }
 
-export default function Schedule({ teamData }) {
+export default function Schedule({ teamData, onGameRecap }) {
   const { team, schedule } = teamData;
   const completed = schedule.filter(g => g.result !== 'upcoming');
   const upcoming  = schedule.filter(g => g.result === 'upcoming');
@@ -93,7 +93,13 @@ export default function Schedule({ teamData }) {
 
       <div className="table-wrap">
         {[...completed].reverse().map(g => (
-          <div className="game-row" key={g.id}>
+          <div
+            className="game-row"
+            key={g.id}
+            onClick={() => onGameRecap?.(g.date)}
+            style={{ cursor: onGameRecap ? 'pointer' : 'default' }}
+            title="View game recap"
+          >
             <span className="game-date">
               {fmtShort(g.date)}
               {g.time && g.tz && (
@@ -108,6 +114,9 @@ export default function Schedule({ teamData }) {
               {g.gf}–{g.ga}
             </span>
             <span className={`badge badge-${g.result}`}>{g.result}</span>
+            {onGameRecap && (
+              <span style={{ color: 'var(--muted2)', fontSize: '0.7rem', marginLeft: 'auto' }}>Recap →</span>
+            )}
           </div>
         ))}
       </div>
