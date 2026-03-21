@@ -340,8 +340,16 @@ export default function Dashboard({ onNav, teamData }) {
     return { name: shortDate(g.date), Points: cumPts };
   });
 
-  const gp   = team.record.w + team.record.l + team.record.otl + (team.record.sol || 0);
-  const diff = team.goalsFor - team.goalsAgainst;
+  // Use live standings entry for Remparts when available
+  const rem  = liveEast.find(t => t.code === 'Que');
+  const gp   = rem ? rem.gp  : team.record.w + team.record.l + team.record.otl + (team.record.sol || 0);
+  const recW = rem ? rem.w   : team.record.w;
+  const recL = rem ? rem.l   : team.record.l;
+  const recOTL = rem ? rem.otl : team.record.otl;
+  const pts  = rem ? rem.pts : team.points;
+  const gf   = rem ? rem.gf  : team.goalsFor;
+  const ga   = rem ? rem.ga  : team.goalsAgainst;
+  const diff = gf - ga;
 
   return (
     <div className="page">
@@ -372,8 +380,8 @@ export default function Dashboard({ onNav, teamData }) {
                 {team.name}
               </div>
               <div className="team-hero-record">
-                <strong>{team.record.w}–{team.record.l}–{team.record.otl}{team.record.sol != null ? `–${team.record.sol}` : ''}</strong>
-                &nbsp;·&nbsp; {gp} GP &nbsp;·&nbsp; GF/GA {team.goalsFor}/{team.goalsAgainst}&nbsp;
+                <strong>{recW}–{recL}–{recOTL}</strong>
+                &nbsp;·&nbsp; {gp} GP &nbsp;·&nbsp; GF/GA {gf}/{ga}&nbsp;
                 <span style={{ color: diff >= 0 ? 'var(--green)' : 'var(--red)' }}>({diff >= 0 ? '+' : ''}{diff})</span>
               </div>
               <div style={{ marginTop: '0.5rem', display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
@@ -383,7 +391,7 @@ export default function Dashboard({ onNav, teamData }) {
               </div>
             </div>
             <div className="hero-badge">
-              <div className="hero-pts">{team.points}</div>
+              <div className="hero-pts">{pts}</div>
               <div className="hero-pts-label">Points</div>
             </div>
           </div>
@@ -392,18 +400,18 @@ export default function Dashboard({ onNav, teamData }) {
           <div className="stat-grid stat-grid-4" style={{ marginTop: '0.75rem' }}>
             <div className="stat-card">
               <div className="stat-label">Wins</div>
-              <div className="stat-val green">{team.record.w}</div>
-              <div className="stat-sub">{gp > 0 ? ((team.record.w / gp) * 100).toFixed(0) : 0}% rate</div>
+              <div className="stat-val green">{recW}</div>
+              <div className="stat-sub">{gp > 0 ? ((recW / gp) * 100).toFixed(0) : 0}% rate</div>
             </div>
             <div className="stat-card">
               <div className="stat-label">Goals For</div>
-              <div className="stat-val">{team.goalsFor}</div>
-              <div className="stat-sub">{gp > 0 ? (team.goalsFor / gp).toFixed(1) : 0}/gm</div>
+              <div className="stat-val">{gf}</div>
+              <div className="stat-sub">{gp > 0 ? (gf / gp).toFixed(1) : 0}/gm</div>
             </div>
             <div className="stat-card">
               <div className="stat-label">Goals Against</div>
-              <div className="stat-val red">{team.goalsAgainst}</div>
-              <div className="stat-sub">{gp > 0 ? (team.goalsAgainst / gp).toFixed(1) : 0}/gm</div>
+              <div className="stat-val red">{ga}</div>
+              <div className="stat-sub">{gp > 0 ? (ga / gp).toFixed(1) : 0}/gm</div>
             </div>
             <div className="stat-card">
               <div className="stat-label">Diff</div>
@@ -460,9 +468,9 @@ export default function Dashboard({ onNav, teamData }) {
                 <h2>Season Summary</h2>
                 <div className="ha-row"><span className="ha-label">Home</span><span className="ha-val">{team.home.w}-{team.home.l}-{team.home.otl}-{team.home.sol || 0}</span></div>
                 <div className="ha-row"><span className="ha-label">Away</span><span className="ha-val">{team.away.w}-{team.away.l}-{team.away.otl}{(team.away.sol||0)>0?`-${team.away.sol}`:''}</span></div>
-                <div className="ha-row"><span className="ha-label">Points %</span><span className="ha-val">{gp > 0 ? ((team.points / (gp * 2)) * 100).toFixed(1) : 0}%</span></div>
-                <div className="ha-row"><span className="ha-label">Avg GF</span><span className="ha-val" style={{ color: 'var(--green)' }}>{gp > 0 ? (team.goalsFor / gp).toFixed(2) : 0}</span></div>
-                <div className="ha-row"><span className="ha-label">Avg GA</span><span className="ha-val" style={{ color: 'var(--red)' }}>{gp > 0 ? (team.goalsAgainst / gp).toFixed(2) : 0}</span></div>
+                <div className="ha-row"><span className="ha-label">Points %</span><span className="ha-val">{gp > 0 ? ((pts / (gp * 2)) * 100).toFixed(1) : 0}%</span></div>
+                <div className="ha-row"><span className="ha-label">Avg GF</span><span className="ha-val" style={{ color: 'var(--green)' }}>{gp > 0 ? (gf / gp).toFixed(2) : 0}</span></div>
+                <div className="ha-row"><span className="ha-label">Avg GA</span><span className="ha-val" style={{ color: 'var(--red)' }}>{gp > 0 ? (ga / gp).toFixed(2) : 0}</span></div>
               </div>
             </div>
           </div>

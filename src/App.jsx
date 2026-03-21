@@ -31,6 +31,7 @@ export default function App() {
   // Live player stats – falls back to static data.js while loading or on error
   const { skaters: liveSkaters, leagueSkaters } = useRosterStats();
   const skaters = liveSkaters.length > 0 ? liveSkaters : staticSkaters;
+
   const teamData = { team, skaters, goalies, leagueSkaters, schedule, gameLog, playoffSchedule, playoffGameLog };
 
   useEffect(() => {
