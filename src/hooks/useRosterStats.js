@@ -1,12 +1,10 @@
 import { useState, useEffect } from 'react';
 
-// Active roster jersey numbers — skaters only (goalies stay in data.js).
-// Ethan Toms #20 excluded (out for season). Taillefer #77 included (on roster, injured).
+// Active Remparts jersey numbers (skaters only — goalies stay in data.js).
+// Matched together with team_code === 'Que' to prevent cross-team collisions.
 const ACTIVE_SKATER_JERSEYS = new Set([
-  // Forwards
-  6, 9, 13, 15, 16, 21, 24, 25, 26, 29, 37, 63, 86, 91,
-  // Defence
-  5, 14, 19, 27, 55, 71, 77, 88,
+  5, 6, 9, 13, 14, 15, 16, 19, 21, 24, 25, 26, 27, 29,
+  37, 55, 63, 71, 77, 86, 88, 91,
 ]);
 
 // Photo URL – same CDN as data.js
@@ -71,6 +69,7 @@ export function useRosterStats() {
         const byGP = [...allMapped].sort((a, b) => b.gp - a.gp);
         const seen = new Set();
         const remparts = byGP.filter(p => {
+          if (p.teamCode !== 'QUE') return false;
           if (!ACTIVE_SKATER_JERSEYS.has(p.num)) return false;
           if (seen.has(p.num)) return false;
           seen.add(p.num);
