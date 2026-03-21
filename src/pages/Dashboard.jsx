@@ -2,10 +2,11 @@ import { useState, useEffect, useRef } from 'react';
 import {
   BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Legend, LineChart, Line, CartesianGrid
 } from 'recharts';
-import { useLiveScores }   from '../hooks/useLiveScores';
-import { useLiveLeaders }  from '../hooks/useLiveLeaders';
-import { useStandings }    from '../hooks/useStandings';
-import { useGameLinks }    from '../hooks/useGameLinks';
+import { useLiveScores }        from '../hooks/useLiveScores';
+import { useLiveLeaders }       from '../hooks/useLiveLeaders';
+import { useStandings }         from '../hooks/useStandings';
+import { useGameLinks }         from '../hooks/useGameLinks';
+import { useRempartsSchedule }  from '../hooks/useRempartsSchedule';
 import BoxScoreModal       from '../components/BoxScoreModal';
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
@@ -321,24 +322,48 @@ export default function Dashboard({ onNav, teamData }) {
     const live = games.some(g => g.GameStatus === '2' || g.GameStatus === '3');
     setLiveMode(live);
   }, [games]);
-  const completed = schedule.filter(g => g.result !== 'upcoming');
-  const upcoming  = schedule.filter(g => g.result === 'upcoming');
+
+  // Live Remparts schedule from /api/games — falls back to data.js while loading
+  const { schedule: liveSchedule } = useRempartsSchedule();
+  const activeSchedule = liveSchedule.length > 0 ? liveSchedule : schedule;
+
+  const completed = activeSchedule.filter(g => g.result !== 'upcoming');
+  const upcoming  = activeSchedule.filter(g => g.result === 'upcoming');
   const nextGame  = upcoming[0];
   const recent    = [...completed].slice(-5).reverse();
   const last5     = [...completed].slice(-5);
+
+  // Home/Away split derived from live schedule
+  const homeGames = completed.filter(g => g.home);
+  const awayGames = completed.filter(g => !g.home);
+  const homeRecord = {
+    w:   homeGames.filter(g => g.result === 'W').length,
+    l:   homeGames.filter(g => g.result === 'L').length,
+    otl: homeGames.filter(g => g.result === 'OTL').length,
+  };
+  const awayRecord = {
+    w:   awayGames.filter(g => g.result === 'W').length,
+    l:   awayGames.filter(g => g.result === 'L').length,
+    otl: awayGames.filter(g => g.result === 'OTL').length,
+  };
 
   const sorted     = [...skaters].sort((a, b) => b.pts - a.pts);
   const topScorer  = sorted[0];
   const topGoals   = [...skaters].sort((a, b) => b.g - a.g)[0];
   const topAssists = [...skaters].sort((a, b) => b.a - a.a)[0];
 
-  const chartData = completed.map(g => ({ name: shortDate(g.date), GF: g.gf, GA: g.ga }));
+  // Charts use live schedule; skip games with null scores (upcoming)
+  const chartData = completed
+    .filter(g => g.gf !== null)
+    .map(g => ({ name: shortDate(g.date), GF: g.gf, GA: g.ga }));
   let cumPts = 0;
-  const pointsTrend = completed.map(g => {
-    if (g.result === 'W') cumPts += 2;
-    else if (g.result === 'OTL') cumPts += 1;
-    return { name: shortDate(g.date), Points: cumPts };
-  });
+  const pointsTrend = completed
+    .filter(g => g.result !== 'upcoming')
+    .map(g => {
+      if (g.result === 'W') cumPts += 2;
+      else if (g.result === 'OTL') cumPts += 1;
+      return { name: shortDate(g.date), Points: cumPts };
+    });
 
   // Use live standings entry for Remparts when available
   const rem  = liveEast.find(t => t.code === 'Que');
@@ -466,8 +491,8 @@ export default function Dashboard({ onNav, teamData }) {
               )}
               <div className="card">
                 <h2>Season Summary</h2>
-                <div className="ha-row"><span className="ha-label">Home</span><span className="ha-val">{team.home.w}-{team.home.l}-{team.home.otl}-{team.home.sol || 0}</span></div>
-                <div className="ha-row"><span className="ha-label">Away</span><span className="ha-val">{team.away.w}-{team.away.l}-{team.away.otl}{(team.away.sol||0)>0?`-${team.away.sol}`:''}</span></div>
+                <div className="ha-row"><span className="ha-label">Home</span><span className="ha-val">{homeRecord.w}-{homeRecord.l}-{homeRecord.otl}</span></div>
+                <div className="ha-row"><span className="ha-label">Away</span><span className="ha-val">{awayRecord.w}-{awayRecord.l}-{awayRecord.otl}</span></div>
                 <div className="ha-row"><span className="ha-label">Points %</span><span className="ha-val">{gp > 0 ? ((pts / (gp * 2)) * 100).toFixed(1) : 0}%</span></div>
                 <div className="ha-row"><span className="ha-label">Avg GF</span><span className="ha-val" style={{ color: 'var(--green)' }}>{gp > 0 ? (gf / gp).toFixed(2) : 0}</span></div>
                 <div className="ha-row"><span className="ha-label">Avg GA</span><span className="ha-val" style={{ color: 'var(--red)' }}>{gp > 0 ? (ga / gp).toFixed(2) : 0}</span></div>
