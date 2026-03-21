@@ -1,12 +1,19 @@
 import { useState, useEffect } from 'react';
 
-// LeagueStat team_id for Québec Remparts
-const REMPARTS_TEAM_ID = '9';
+// Active roster jersey numbers — skaters only (goalies stay in data.js).
+// Ethan Toms #20 excluded (out for season). Taillefer #77 included (on roster, injured).
+const ACTIVE_SKATER_JERSEYS = new Set([
+  // Forwards
+  6, 9, 13, 15, 16, 21, 24, 25, 26, 29, 37, 63, 86, 91,
+  // Defence
+  5, 14, 19, 27, 55, 71, 77, 88,
+]);
 
 // Photo URL – same CDN as data.js
 const photo = id => `https://assets.leaguestat.com/lhjmq/240x240/${id}.jpg`;
 
-// Map API position strings to the two-value system used throughout the app
+// Map API position strings to the two-value system used throughout the app.
+// Goalies (pos='G') are excluded before this is called — they live in data.js.
 function mapPos(apiPos) {
   return apiPos === 'D' ? 'D' : 'F';
 }
@@ -14,8 +21,10 @@ function mapPos(apiPos) {
 // Convert a raw API skater record to the shape used in data.js / the rest of the app:
 // { num, name, pos, gp, g, a, pts, photo }
 function mapSkater(p) {
+  // tp_jersey_number is a fallback when jersey_number is empty (avoids #NaN)
+  const rawNum = p.jersey_number || p.tp_jersey_number || '';
   return {
-    num:  parseInt(p.jersey_number, 10),
+    num:  parseInt(rawNum, 10),
     name: `${p.first_name} ${p.last_name}`,
     pos:  mapPos(p.position),
     gp:   parseInt(p.games_played,  10) || 0,
@@ -26,6 +35,7 @@ function mapSkater(p) {
     // Extra fields available from the API (used by leagueSkaters for scoring leaders)
     teamCode: (p.team_code ?? '').toUpperCase(),
     teamId:   p.team_id,
+    apiPos:   p.position,
   };
 }
 
@@ -47,13 +57,25 @@ export function useRosterStats() {
         const raw = json?.SiteKit?.Skaters ?? [];
         if (cancelled) return;
 
-        // All league skaters sorted by points – used for scoring leaders
+        // All league skaters sorted by points – used for scoring leaders.
+        // Exclude goalies (pos='G') so they don't shadow data.js goalie entries.
         const allMapped = raw
+          .filter(p => p.position !== 'G')
           .map(mapSkater)
+          .filter(p => !isNaN(p.num))
           .sort((a, b) => b.pts - a.pts || b.g - a.g);
 
-        // Remparts-only skaters (non-goalie positions only – no goalie view exists)
-        const remparts = allMapped.filter(p => p.teamId === REMPARTS_TEAM_ID);
+        // Active Remparts skaters — whitelist by jersey number.
+        // Sort by GP desc first so if two players share a jersey number the
+        // active one (more GP) wins after deduplication.
+        const byGP = [...allMapped].sort((a, b) => b.gp - a.gp);
+        const seen = new Set();
+        const remparts = byGP.filter(p => {
+          if (!ACTIVE_SKATER_JERSEYS.has(p.num)) return false;
+          if (seen.has(p.num)) return false;
+          seen.add(p.num);
+          return true;
+        });
 
         setLeagueSkaters(allMapped);
         setSkaters(remparts);

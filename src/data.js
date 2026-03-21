@@ -35,17 +35,13 @@ export const skaters = [
   { num: 71, name: "Thomas Charbonneau",     pos: "D", gp: 46, g: 2,  a: 9,  pts: 11, photo: photo(23332) },
   { num: 5,  name: "Logan Brennan",          pos: "D", gp: 46, g: 3,  a: 5,  pts: 8,  photo: photo(23842) },
   { num: 86, name: "Nishaan Parmar",         pos: "F", gp: 14, g: 1,  a: 5,  pts: 6,  photo: photo(24112) },
-  { num: 8,  name: "Eliott Simard",          pos: "F", gp: 12, g: 4,  a: 1,  pts: 5,  photo: photo(19162) },
   { num: 19, name: "Joshua Brady",           pos: "D", gp: 22, g: 2,  a: 3,  pts: 5,  photo: photo(24111) },
-  { num: 20, name: "Ethan Toms",             pos: "F", gp: 15, g: 1,  a: 3,  pts: 4,  photo: photo(24097) },
   { num: 13, name: "Vladimir Karabaev",      pos: "F", gp: 16, g: 1,  a: 3,  pts: 4,  photo: photo(23753) },
-  { num: 28, name: "Samuel Fontaine",        pos: "F", gp: 15, g: 0,  a: 1,  pts: 1,  photo: photo(19654) },
 ];
 
 export const goalies = [
-  { num: 33, name: "Patrick Déniger",       pos: "G", gp: 29, min: 1689, ga: 67, saves: 665, shots: 732, gaa: 2.38, svPct: 90.8, photo: photo(21311) },
-  { num: 73, name: "Benjamin Lelièvre",     pos: "G", gp: 21, min: 1048, ga: 60, saves: 401, shots: 461, gaa: 3.43, svPct: 87.0, photo: photo(20224) },
-  { num: 31, name: "Louis-Antoine Denault", pos: "G", gp: 17, min:  954, ga: 43, saves: 442, shots: 485, gaa: 2.70, svPct: 91.1, photo: photo(20480) },
+  { num: 33, name: "Patrick Déniger",   pos: "G", gp: 29, min: 1689, ga: 67, saves: 665, shots: 732, gaa: 2.38, svPct: 90.8, photo: photo(21311) },
+  { num: 73, name: "Benjamin Lelièvre", pos: "G", gp: 21, min: 1048, ga: 60, saves: 401, shots: 461, gaa: 3.43, svPct: 87.0, photo: photo(20224) },
 ];
 
 // tz = IANA timezone of the venue (not the viewer's browser)
