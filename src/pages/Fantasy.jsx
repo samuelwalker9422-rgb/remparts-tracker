@@ -3,11 +3,19 @@ import { supabase, supabaseReady } from '../lib/supabase';
 import AuthModal from '../components/AuthModal';
 
 // ── Scoring ───────────────────────────────────────────────────────────────────
-// Goal = 3 pts, Assist = 2 pts  (shots/PIM not currently tracked in gameLog)
+// ESPN standard hockey scoring applied to categories available in gameLog (g, a per game).
+// PPG (+1), PPA (+1), SHG (+2), +/-, and goalie stats (W/SO/SV/GA) require per-game
+// breakdowns from the QMJHL API that are not available — only season totals are returned.
+// Hat trick bonus IS computable because g is stored per entry.
 function computeScore(lineupNums, gameId, gameLog) {
   return lineupNums.reduce((total, num) => {
     const entries = gameLog.filter(e => e.gameId === gameId && e.num === num);
-    return total + entries.reduce((s, e) => s + e.g * 3 + e.a * 2, 0);
+    return total + entries.reduce((s, e) => {
+      const goals    = e.g * 3;
+      const assists  = e.a * 2;
+      const hatTrick = e.g >= 3 ? 3 : 0;   // +3 bonus for 3+ goals in one game
+      return s + goals + assists + hatTrick;
+    }, 0);
   }, 0);
 }
 
@@ -333,7 +341,17 @@ export default function Fantasy({ teamData }) {
               {/* Lock button */}
               <div className="fant-lock-wrap">
                 <div className="fant-scoring-key">
-                  Scoring: Goal = 3 pts · Assist = 2 pts
+                  <div className="fant-scoring-title">ESPN Scoring</div>
+                  <div className="fant-scoring-cats">
+                    <span className="fant-scoring-active">G +3</span>
+                    <span className="fant-scoring-active">A +2</span>
+                    <span className="fant-scoring-active">Hat Trick +3</span>
+                    <span className="fant-scoring-unavail" title="Per-game data not available from QMJHL API">PPG +1 N/A</span>
+                    <span className="fant-scoring-unavail" title="Per-game data not available from QMJHL API">PPA +1 N/A</span>
+                    <span className="fant-scoring-unavail" title="Per-game data not available from QMJHL API">SHG +2 N/A</span>
+                    <span className="fant-scoring-unavail" title="Per-game data not available from QMJHL API">+/− N/A</span>
+                    <span className="fant-scoring-unavail" title="No goalie game log available">G: W/SO/SV N/A</span>
+                  </div>
                 </div>
                 <button
                   className="fant-lock-btn"

@@ -1,3 +1,6 @@
+import { useState, useEffect } from 'react';
+import { useStandings } from '../hooks/useStandings';
+
 function fmtFull(date) {
   return new Date(date + 'T12:00:00').toLocaleDateString('en-CA', { weekday: 'short', month: 'short', day: 'numeric' });
 }
@@ -27,20 +30,51 @@ function fmtGameTime(time, tz) {
 }
 
 export default function Schedule({ teamData, onGameRecap }) {
-  const { team, schedule } = teamData;
-  const completed = schedule.filter(g => g.result !== 'upcoming');
-  const upcoming  = schedule.filter(g => g.result === 'upcoming');
+  const { team } = teamData;
 
-  const wins   = completed.filter(g => g.result === 'W').length;
-  const losses = completed.filter(g => g.result === 'L').length;
-  const otls   = completed.filter(g => g.result === 'OTL').length;
+  // Live games from /api/games for display only
+  const [games,   setGames]   = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error,   setError]   = useState(null);
+
+  useEffect(() => {
+    let cancelled = false;
+    async function load() {
+      try {
+        const res = await fetch('/api/games');
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        const json = await res.json();
+        if (!cancelled) {
+          setGames(json.games ?? []);
+          setError(null);
+        }
+      } catch (e) {
+        if (!cancelled) setError(e.message);
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
+    }
+    load();
+    return () => { cancelled = true; };
+  }, []);
+
+  // Live team record from standings
+  const { east } = useStandings();
+  const rem = east.find(t => t.code === 'Que');
+
+  const completed = games.filter(g => g.result !== 'upcoming');
+  const upcoming  = games.filter(g => g.result === 'upcoming');
+
+  const wins   = rem ? rem.w   : completed.filter(g => g.result === 'W').length;
+  const losses = rem ? rem.l   : completed.filter(g => g.result === 'L').length;
+  const otls   = rem ? rem.otl : completed.filter(g => g.result === 'OTL').length;
 
   return (
     <div className="page">
       <div className="espn-header">
         <div className="espn-header-bar" />
         <h2>Schedule & Results</h2>
-        <span className="subtitle">{team.fullName} · {completed.length} games tracked</span>
+        <span className="subtitle">{team.fullName} · {completed.length} games played</span>
       </div>
 
       <div className="stat-grid stat-grid-3 section-gap">
@@ -58,7 +92,19 @@ export default function Schedule({ teamData, onGameRecap }) {
         </div>
       </div>
 
-      {upcoming.length > 0 && (
+      {loading && (
+        <div style={{ textAlign: 'center', color: 'var(--muted)', padding: '2rem' }}>
+          Loading schedule…
+        </div>
+      )}
+
+      {error && !loading && (
+        <div style={{ textAlign: 'center', color: 'var(--red)', padding: '1rem' }}>
+          Failed to load schedule: {error}
+        </div>
+      )}
+
+      {!loading && upcoming.length > 0 && (
         <>
           <div className="espn-header">
             <div className="espn-header-bar" style={{ background: 'var(--green)' }} />
@@ -85,41 +131,45 @@ export default function Schedule({ teamData, onGameRecap }) {
         </>
       )}
 
-      <div className="espn-header">
-        <div className="espn-header-bar" />
-        <h2>Results</h2>
-        <span className="subtitle">Most recent first</span>
-      </div>
-
-      <div className="table-wrap">
-        {[...completed].reverse().map(g => (
-          <div
-            className="game-row"
-            key={g.id}
-            onClick={() => onGameRecap?.(g.date)}
-            style={{ cursor: onGameRecap ? 'pointer' : 'default' }}
-            title="View game recap"
-          >
-            <span className="game-date">
-              {fmtShort(g.date)}
-              {g.time && g.tz && (
-                <span style={{ display: 'block', fontSize: '0.68rem', color: 'var(--muted)' }}>
-                  {fmtGameTime(g.time, g.tz)}
-                </span>
-              )}
-            </span>
-            <span className="badge badge-loc">{g.home ? 'HOME' : 'AWAY'}</span>
-            <span className="game-opp">{g.home ? 'vs' : '@'} {g.opponent}</span>
-            <span className="game-score" style={{ color: g.result === 'W' ? 'var(--green)' : g.result === 'L' ? 'var(--red)' : 'var(--orange)' }}>
-              {g.gf}–{g.ga}
-            </span>
-            <span className={`badge badge-${g.result}`}>{g.result}</span>
-            {onGameRecap && (
-              <span style={{ color: 'var(--muted2)', fontSize: '0.7rem', marginLeft: 'auto' }}>Recap →</span>
-            )}
+      {!loading && completed.length > 0 && (
+        <>
+          <div className="espn-header">
+            <div className="espn-header-bar" />
+            <h2>Results</h2>
+            <span className="subtitle">Most recent first</span>
           </div>
-        ))}
-      </div>
+
+          <div className="table-wrap">
+            {[...completed].reverse().map(g => (
+              <div
+                className="game-row"
+                key={g.id}
+                onClick={() => onGameRecap?.(g.date)}
+                style={{ cursor: onGameRecap ? 'pointer' : 'default' }}
+                title="View game recap"
+              >
+                <span className="game-date">
+                  {fmtShort(g.date)}
+                  {g.time && g.tz && (
+                    <span style={{ display: 'block', fontSize: '0.68rem', color: 'var(--muted)' }}>
+                      {fmtGameTime(g.time, g.tz)}
+                    </span>
+                  )}
+                </span>
+                <span className="badge badge-loc">{g.home ? 'HOME' : 'AWAY'}</span>
+                <span className="game-opp">{g.home ? 'vs' : '@'} {g.opponent}</span>
+                <span className="game-score" style={{ color: g.result === 'W' ? 'var(--green)' : g.result === 'L' ? 'var(--red)' : 'var(--orange)' }}>
+                  {g.gf}–{g.ga}
+                </span>
+                <span className={`badge badge-${g.result}`}>{g.result}</span>
+                {onGameRecap && (
+                  <span style={{ color: 'var(--muted2)', fontSize: '0.7rem', marginLeft: 'auto' }}>Recap →</span>
+                )}
+              </div>
+            ))}
+          </div>
+        </>
+      )}
     </div>
   );
 }

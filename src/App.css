@@ -1747,6 +1747,39 @@ tr:hover td { background: #1e1e1e; }
   color: var(--muted);
   text-align: center;
 }
+.fant-scoring-title {
+  font-weight: 700;
+  font-size: 0.7rem;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--muted);
+  margin-bottom: 0.35rem;
+}
+.fant-scoring-cats {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 0.3rem 0.5rem;
+}
+.fant-scoring-active {
+  background: color-mix(in srgb, var(--green) 15%, transparent);
+  color: var(--green);
+  border: 1px solid color-mix(in srgb, var(--green) 30%, transparent);
+  border-radius: 4px;
+  padding: 1px 6px;
+  font-size: 0.68rem;
+  font-weight: 600;
+}
+.fant-scoring-unavail {
+  background: color-mix(in srgb, var(--muted) 10%, transparent);
+  color: var(--muted2);
+  border: 1px solid color-mix(in srgb, var(--muted) 20%, transparent);
+  border-radius: 4px;
+  padding: 1px 6px;
+  font-size: 0.68rem;
+  text-decoration: line-through;
+  cursor: help;
+}
 .fant-lock-btn {
   background: var(--red);
   border: none;
