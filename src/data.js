@@ -43,9 +43,9 @@ export const skaters = [
 ];
 
 export const goalies = [
-  { num: 33, name: "Patrick Déniger",       gp: 29, min: 1689, ga: 67, saves: 665, shots: 732, gaa: 2.38, svPct: 90.8, photo: photo(21311) },
-  { num: 73, name: "Benjamin Lelièvre",     gp: 21, min: 1048, ga: 60, saves: 401, shots: 461, gaa: 3.43, svPct: 87.0, photo: photo(20224) },
-  { num: 31, name: "Louis-Antoine Denault", gp: 17, min:  954, ga: 43, saves: 442, shots: 485, gaa: 2.70, svPct: 91.1, photo: photo(20480) },
+  { num: 33, name: "Patrick Déniger",       pos: "G", gp: 29, min: 1689, ga: 67, saves: 665, shots: 732, gaa: 2.38, svPct: 90.8, photo: photo(21311) },
+  { num: 73, name: "Benjamin Lelièvre",     pos: "G", gp: 21, min: 1048, ga: 60, saves: 401, shots: 461, gaa: 3.43, svPct: 87.0, photo: photo(20224) },
+  { num: 31, name: "Louis-Antoine Denault", pos: "G", gp: 17, min:  954, ga: 43, saves: 442, shots: 485, gaa: 2.70, svPct: 91.1, photo: photo(20480) },
 ];
 
 // tz = IANA timezone of the venue (not the viewer's browser)

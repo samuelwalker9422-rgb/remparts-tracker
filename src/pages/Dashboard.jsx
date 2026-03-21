@@ -1,7 +1,12 @@
+import { useState, useEffect, useRef } from 'react';
 import {
   BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Legend, LineChart, Line, CartesianGrid
 } from 'recharts';
-import { useLiveScores } from '../hooks/useLiveScores';
+import { useLiveScores }   from '../hooks/useLiveScores';
+import { useLiveLeaders }  from '../hooks/useLiveLeaders';
+import { useStandings }    from '../hooks/useStandings';
+import { useGameLinks }    from '../hooks/useGameLinks';
+import BoxScoreModal       from '../components/BoxScoreModal';
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 function shortDate(date) {
@@ -75,20 +80,47 @@ function fmtScorebarTime(g) {
   return `${h12}${mins} ${ampm}${label ? ` ${label}` : ''}`;
 }
 
-function gameStatus(g) {
-  if (g.GameStatus === '4') return { text: 'FINAL',             cls: 'db-final' };
-  if (g.GameStatus === '2') return { text: `P${g.Period} LIVE`, cls: 'db-live'  };
-  if (g.GameStatus === '3') return { text: `END P${g.Period}`,  cls: 'db-int'   };
+function gameStatus(g, elapsedSec = 0) {
+  if (g.GameStatus === '4') return { text: 'FINAL',       cls: 'db-final' };
+  if (g.GameStatus === '2') {
+    let clockText = 'LIVE';
+    if (g.GameClock) {
+      const [mm, ss] = g.GameClock.split(':').map(Number);
+      let total = mm * 60 + ss - elapsedSec;
+      if (total < 0) total = 0;
+      const dm = Math.floor(total / 60);
+      const ds = total % 60;
+      clockText = `${dm}:${String(ds).padStart(2, '0')}`;
+    }
+    return { text: `P${g.Period} · ${clockText}`, cls: 'db-live' };
+  }
+  if (g.GameStatus === '3') return { text: `END P${g.Period}`, cls: 'db-int' };
   return { text: fmtScorebarTime(g), cls: 'db-pre' };
 }
 
 // ── League Scoreboard ─────────────────────────────────────────────────────────
-function LeagueScoreboard() {
-  const { games, loading } = useLiveScores();
+function LeagueScoreboard({ games, loading }) {
+  const [, setTick]      = useState(0);
+  const fetchedAtRef     = useRef(Date.now());
+  const [activeGame, setActiveGame] = useState(null);
+  const gameLinks   = useGameLinks();
+
+  // Reset the reference timestamp whenever fresh API data arrives
+  useEffect(() => { fetchedAtRef.current = Date.now(); }, [games]);
+
+  // 1-second ticker while any game is live so the clock counts down smoothly
+  const hasLive = games.some(g => g.GameStatus === '2');
+  useEffect(() => {
+    if (!hasLive) return;
+    const id = setInterval(() => setTick(t => t + 1), 1000);
+    return () => clearInterval(id);
+  }, [hasLive]);
 
   if (loading) return (
     <div className="db-scores-loading">Loading QMJHL scores…</div>
   );
+
+  const elapsedSec = Math.floor((Date.now() - fetchedAtRef.current) / 1000);
 
   // Group by date, sort dates
   const groups = {};
@@ -105,73 +137,87 @@ function LeagueScoreboard() {
   const showDates = relevantDates.length ? relevantDates : Object.keys(groups).slice(0, 1);
 
   return (
-    <div className="db-scoreboard section-gap">
-      {showDates.map(date => (
-        <div key={date} className="db-score-group">
-          <div className="db-date-label">{dayLabel(date)}</div>
-          <div className="db-score-grid">
-            {groups[date].map(g => {
-              const { text, cls } = gameStatus(g);
-              const isRem  = g.HomeLongName === 'Québec, Remparts' || g.VisitorLongName === 'Québec, Remparts';
-              const isLive = g.GameStatus === '2' || g.GameStatus === '3';
-              const started = g.GameStatus !== '1';
-              return (
-                <div key={g.ID} className={`db-game-card${isRem ? ' db-game-rem' : ''}${isLive ? ' db-game-live' : ''}`}>
-                  <div className={`db-game-status ${cls}`}>
-                    {isLive && <span className="sc-dot" />}
-                    {text}
-                  </div>
-                  <div className="db-game-teams">
-                    <div className="db-game-row">
-                      {g.VisitorLogo && <img src={g.VisitorLogo} alt="" className="db-logo" />}
-                      <span className="db-team-abbr">{abbr(g.VisitorLongName)}</span>
-                      <span className="db-team-score">{started ? g.VisitorGoals : '-'}</span>
+    <>
+      {activeGame && (
+        <BoxScoreModal
+          gameId={activeGame.ID}
+          onClose={() => setActiveGame(null)}
+        />
+      )}
+      <div className="db-scoreboard section-gap">
+        {showDates.map(date => (
+          <div key={date} className="db-score-group">
+            <div className="db-date-label">{dayLabel(date)}</div>
+            <div className="db-score-grid">
+              {groups[date].map(g => {
+                const { text, cls } = gameStatus(g, elapsedSec);
+                const isRem     = g.HomeLongName === 'Québec, Remparts' || g.VisitorLongName === 'Québec, Remparts';
+                const isLive    = g.GameStatus === '2' || g.GameStatus === '3';
+                const started   = g.GameStatus !== '1';
+                const clickable = g.GameStatus !== '1';
+                const floUrl    = gameLinks[String(g.ID)];
+                return (
+                  <div
+                    key={g.ID}
+                    className={`db-game-card${isRem ? ' db-game-rem' : ''}${isLive ? ' db-game-live' : ''}${clickable ? ' db-game-clickable' : ''}`}
+                    onClick={clickable ? () => setActiveGame(g) : undefined}
+                    title={clickable ? 'Click for box score' : undefined}
+                  >
+                    <div className={`db-game-status ${cls}`}>
+                      {isLive && <span className="sc-dot" />}
+                      {text}
                     </div>
-                    <div className="db-game-row">
-                      {g.HomeLogo && <img src={g.HomeLogo} alt="" className="db-logo" />}
-                      <span className="db-team-abbr">{abbr(g.HomeLongName)}</span>
-                      <span className="db-team-score">{started ? g.HomeGoals : '-'}</span>
+                    <div className="db-game-teams">
+                      <div className="db-game-row">
+                        {g.VisitorLogo && <img src={g.VisitorLogo} alt="" className="db-logo" />}
+                        <span className="db-team-abbr">{abbr(g.VisitorLongName)}</span>
+                        <span className="db-team-score">{started ? g.VisitorGoals : '-'}</span>
+                      </div>
+                      <div className="db-game-row">
+                        {g.HomeLogo && <img src={g.HomeLogo} alt="" className="db-logo" />}
+                        <span className="db-team-abbr">{abbr(g.HomeLongName)}</span>
+                        <span className="db-team-score">{started ? g.HomeGoals : '-'}</span>
+                      </div>
+                    </div>
+                    {isRem && <div className="db-rem-tag">REMPARTS</div>}
+                    <div className="db-game-footer">
+                      {clickable && <span className="db-game-tap">Box score ›</span>}
+                      {floUrl && (
+                        <a
+                          href={floUrl}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="db-flo-btn"
+                          onClick={e => e.stopPropagation()}
+                          title="Watch on FloHockey"
+                        >
+                          📺 Watch
+                        </a>
+                      )}
                     </div>
                   </div>
-                  {isRem && <div className="db-rem-tag">REMPARTS</div>}
-                </div>
-              );
-            })}
+                );
+              })}
+            </div>
           </div>
-        </div>
-      ))}
-    </div>
+        ))}
+      </div>
+    </>
   );
 }
 
-// ── League Standings (hardcoded — final 2025-26 regular season) ───────────────
-const EAST = [
-  { name: 'Moncton Wildcats',             abbr: 'MNT', gp: 62, w: 48, l: 10, otl: 4, pts: 100 },
-  { name: 'Chicoutimi Saguenéens',        abbr: 'CHI', gp: 62, w: 47, l: 10, otl: 5, pts: 99  },
-  { name: 'Newfoundland Regiment',        abbr: 'NFR', gp: 62, w: 36, l: 22, otl: 4, pts: 76  },
-  { name: 'Charlottetown Islanders',      abbr: 'CLT', gp: 62, w: 33, l: 21, otl: 8, pts: 74  },
-  { name: 'Québec Remparts',              abbr: 'QUÉ', gp: 62, w: 32, l: 24, otl: 5, pts: 70  },
-  { name: 'Cape Breton Eagles',           abbr: 'CBE', gp: 62, w: 27, l: 22, otl:13, pts: 67  },
-  { name: 'Halifax Mooseheads',           abbr: 'HAL', gp: 62, w: 29, l: 27, otl: 6, pts: 64  },
-  { name: 'Saint John Sea Dogs',          abbr: 'SJN', gp: 62, w: 22, l: 35, otl: 5, pts: 49  },
-  { name: 'Rimouski Océanic',             abbr: 'RIM', gp: 62, w: 18, l: 43, otl: 1, pts: 37  },
-  { name: 'Baie-Comeau Drakkar',          abbr: 'BCO', gp: 62, w: 14, l: 42, otl: 6, pts: 34  },
-];
-const WEST = [
-  { name: 'Drummondville Voltigeurs',     abbr: 'DRU', gp: 62, w: 39, l: 17, otl: 6, pts: 84 },
-  { name: 'Rouyn-Noranda Huskies',        abbr: 'RNH', gp: 62, w: 38, l: 17, otl: 7, pts: 83 },
-  { name: 'Blainville-Boisbriand Armada', abbr: 'BLV', gp: 62, w: 38, l: 18, otl: 6, pts: 82 },
-  { name: 'Shawinigan Cataractes',        abbr: 'SHA', gp: 62, w: 33, l: 23, otl: 6, pts: 72 },
-  { name: "Sherbrooke Phœnix",            abbr: 'SHB', gp: 62, w: 33, l: 24, otl: 5, pts: 71 },
-  { name: "Val-d'Or Foreurs",             abbr: 'VDO', gp: 62, w: 26, l: 29, otl: 7, pts: 59 },
-  { name: 'Victoriaville Tigres',         abbr: 'VIC', gp: 62, w: 23, l: 34, otl: 5, pts: 51 },
-  { name: 'Gatineau Olympiques',          abbr: 'GAT', gp: 62, w: 20, l: 37, otl: 5, pts: 45 },
-];
-
-function StandingsTable({ conf, rows }) {
+// ── League Standings ──────────────────────────────────────────────────────────
+function StandingsTable({ conf, rows, loading }) {
+  const shortConf = conf === 'Eastern Conference' ? 'Eastern' : 'Western';
   return (
     <div className="db-standings">
-      <div className="db-standings-title">{conf}</div>
+      <div className="db-standings-title" style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+        {shortConf}
+        {loading
+          ? <span style={{ fontSize: '0.65rem', color: 'var(--muted)', fontWeight: 400 }}>Loading…</span>
+          : <span style={{ fontSize: '0.6rem', background: 'var(--red)', color: '#fff', borderRadius: 4, padding: '1px 5px', fontWeight: 700, letterSpacing: '0.04em' }}>LIVE</span>
+        }
+      </div>
       <table className="db-std-table">
         <thead>
           <tr>
@@ -181,13 +227,14 @@ function StandingsTable({ conf, rows }) {
         </thead>
         <tbody>
           {rows.map((t, i) => {
-            const isRem = t.name === 'Québec Remparts';
+            const isRem      = t.name?.includes('Remparts') || t.code === 'Que' || t.nickname === 'Remparts';
             const inPlayoffs = i < 8;
+            const displayAbbr = t.abbr ?? t.code ?? '???';
             return (
-              <tr key={t.abbr} className={`${isRem ? 'std-remparts' : ''}${inPlayoffs ? ' std-playoff' : ''}`}>
+              <tr key={t.code ?? i} className={`${isRem ? 'std-remparts' : ''}${inPlayoffs ? ' std-playoff' : ''}`}>
                 <td style={{ color: 'var(--muted)', fontSize: '0.7rem' }}>{i + 1}</td>
                 <td className="left">
-                  <span className="std-abbr">{t.abbr}</span>
+                  <span className="std-abbr">{displayAbbr}</span>
                   {i === 7 && <span className="std-cutline" title="Playoff cutline" />}
                 </td>
                 <td>{t.gp}</td>
@@ -205,42 +252,44 @@ function StandingsTable({ conf, rows }) {
 }
 
 // ── League Scoring Leaders ────────────────────────────────────────────────────
-const LEADERS = [
-  { name: 'Maxim Massé',        team: 'CHI', g: 50, a: 49, pts: 99 },
-  { name: 'Philippe Veilleux',  team: 'VDO', g: 42, a: 53, pts: 95 },
-  { name: 'Thomas Verdon',      team: 'RNH', g: 34, a: 57, pts: 91 },
-  { name: 'Justin Larose',      team: 'NFR', g: 32, a: 54, pts: 86 },
-  { name: 'Nathan Leek',        team: 'CLT', g: 47, a: 36, pts: 83 },
-  { name: 'Egor Shilov',        team: 'VIC', g: 32, a: 50, pts: 82 },
-  { name: 'Justin Carbonneau',  team: 'BLV', g: 51, a: 29, pts: 80 },
-  { name: 'Alexey Vlasov',      team: 'VIC', g: 44, a: 35, pts: 79 },
-  { name: 'Félix Lacerte',      team: 'SHA', g: 36, a: 43, pts: 79 },
-  { name: 'Tommy Bleyl',        team: 'MNT', g: 13, a: 66, pts: 79 },
-];
+function LeagueLeaders({ leaders, loading }) {
 
-function LeagueLeaders() {
   return (
     <div className="db-leaders">
-      <div className="db-standings-title">Scoring Leaders · 2025-26</div>
+      <div className="db-standings-title" style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+        Scoring Leaders
+        {loading
+          ? <span style={{ fontSize: '0.65rem', color: 'var(--muted)', fontWeight: 400 }}>Loading…</span>
+          : <span style={{ fontSize: '0.6rem', background: 'var(--red)', color: '#fff', borderRadius: 4, padding: '1px 5px', fontWeight: 700, letterSpacing: '0.04em' }}>LIVE</span>
+        }
+      </div>
       <table className="db-std-table">
         <thead>
           <tr>
             <th>#</th>
             <th className="left">Player</th>
-            <th>Team</th><th>G</th><th>A</th>
+            <th>Team</th><th>GP</th><th>G</th><th>A</th>
             <th className="pts-col">PTS</th>
           </tr>
         </thead>
         <tbody>
-          {LEADERS.map((p, i) => (
-            <tr key={p.name} className={p.team === 'QUÉ' ? 'std-remparts' : ''}>
-              <td style={{ color: i < 3 ? 'var(--red)' : 'var(--muted)', fontWeight: i < 3 ? 800 : 400, fontSize: '0.7rem' }}>{i + 1}</td>
-              <td className="left" style={{ fontWeight: 600 }}>{p.name}</td>
-              <td style={{ color: 'var(--muted)', fontSize: '0.72rem' }}>{p.team}</td>
-              <td>{p.g}</td><td>{p.a}</td>
-              <td className="pts-col"><strong>{p.pts}</strong></td>
-            </tr>
-          ))}
+          {leaders.map((p, i) => {
+            const code  = (p.team_code ?? '').toUpperCase();
+            const isRem = code === 'QUE' || code === 'QUÉ' || p.name?.includes('Remparts');
+            return (
+              <tr key={p.player_id ?? p.name} className={isRem ? 'std-remparts' : ''}>
+                <td style={{ color: i < 3 ? 'var(--red)' : 'var(--muted)', fontWeight: i < 3 ? 800 : 400, fontSize: '0.7rem' }}>{i + 1}</td>
+                <td className="left" style={{ fontWeight: 600 }}>{p.name}</td>
+                <td style={{ color: 'var(--muted)', fontSize: '0.72rem' }}>{p.team_code}</td>
+                <td style={{ color: 'var(--muted)' }}>{p.gp}</td>
+                <td>{p.goals}</td><td>{p.assists}</td>
+                <td className="pts-col"><strong>{p.points}</strong></td>
+              </tr>
+            );
+          })}
+          {!loading && leaders.length === 0 && (
+            <tr><td colSpan={7} style={{ color: 'var(--muted)', fontSize: '0.8rem', textAlign: 'center', padding: '0.75rem' }}>No data available</td></tr>
+          )}
         </tbody>
       </table>
     </div>
@@ -250,6 +299,28 @@ function LeagueLeaders() {
 // ── Main Dashboard ────────────────────────────────────────────────────────────
 export default function Dashboard({ onNav, teamData }) {
   const { team, skaters, schedule } = teamData;
+
+  // ── Live data hooks ────────────────────────────────────────────────────────
+  const { east: liveEast, west: liveWest, loading: standingsLoading, refresh: refreshStandings } = useStandings();
+  const { leaders, loading: leadersLoading, refresh: refreshLeaders, setLiveMode }               = useLiveLeaders();
+
+  // ── Cross-hook coordination: when a game ends → refresh standings + leaders
+  const { games, loading: scoresLoading, error: scoresError, lastFinishedAt } = useLiveScores();
+  useEffect(() => {
+    if (!lastFinishedAt) return;
+    // Small delay so the API has time to finalise the game record
+    const t = setTimeout(() => {
+      refreshStandings();
+      refreshLeaders();
+    }, 5_000);
+    return () => clearTimeout(t);
+  }, [lastFinishedAt]);
+
+  // Keep leaders in fast-poll mode while any game is live
+  useEffect(() => {
+    const live = games.some(g => g.GameStatus === '2' || g.GameStatus === '3');
+    setLiveMode(live);
+  }, [games]);
   const completed = schedule.filter(g => g.result !== 'upcoming');
   const upcoming  = schedule.filter(g => g.result === 'upcoming');
   const nextGame  = upcoming[0];
@@ -281,7 +352,7 @@ export default function Dashboard({ onNav, teamData }) {
         <h2>QMJHL Scores</h2>
         <span className="subtitle">Live · Updated automatically</span>
       </div>
-      <LeagueScoreboard />
+      <LeagueScoreboard games={games} loading={scoresLoading} />
 
       {/* ── REMPARTS HERO ────────────────────────────────────────────────── */}
       <div className="espn-header">
@@ -400,11 +471,11 @@ export default function Dashboard({ onNav, teamData }) {
         {/* RIGHT — League context */}
         <div className="db-right">
           <div className="two-col db-standings-grid">
-            <StandingsTable conf="Eastern Conference" rows={EAST} />
-            <StandingsTable conf="Western Conference" rows={WEST} />
+            <StandingsTable conf="Eastern Conference" rows={liveEast} loading={standingsLoading} />
+            <StandingsTable conf="Western Conference" rows={liveWest} loading={standingsLoading} />
           </div>
           <div style={{ marginTop: '1rem' }}>
-            <LeagueLeaders />
+            <LeagueLeaders leaders={leaders} loading={leadersLoading} />
           </div>
         </div>
       </div>

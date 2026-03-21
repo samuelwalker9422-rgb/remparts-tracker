@@ -8,7 +8,8 @@ import Standings from './pages/Standings';
 import Playoffs from './pages/Playoffs';
 import GameRecap from './pages/GameRecap';
 import Fantasy from './pages/Fantasy';
-import { team, skaters, goalies, schedule, gameLog, playoffSchedule, playoffGameLog } from './data';
+import { useRosterStats } from './hooks/useRosterStats';
+import { team, skaters as staticSkaters, goalies, schedule, gameLog, playoffSchedule, playoffGameLog } from './data';
 
 const PAGES = [
   { key: 'Dashboard', label: 'Home' },
@@ -20,15 +21,17 @@ const PAGES = [
   { key: 'Fantasy',   label: '🏒 Fantasy'  },
 ];
 
-const teamData = { team, skaters, goalies, schedule, gameLog, playoffSchedule, playoffGameLog };
-
-
 export default function App() {
   const [page, setPage]         = useState('Dashboard');
   const [gameDate, setGameDate] = useState(null);
   const [darkMode, setDarkMode] = useState(
     () => localStorage.getItem('theme') !== 'light'
   );
+
+  // Live player stats – falls back to static data.js while loading or on error
+  const { skaters: liveSkaters, leagueSkaters } = useRosterStats();
+  const skaters = liveSkaters.length > 0 ? liveSkaters : staticSkaters;
+  const teamData = { team, skaters, goalies, leagueSkaters, schedule, gameLog, playoffSchedule, playoffGameLog };
 
   useEffect(() => {
     document.documentElement.setAttribute('data-theme', darkMode ? 'dark' : 'light');

@@ -1892,3 +1892,281 @@ tr:hover td { background: #1e1e1e; }
   .fant-lock-btn { min-width: unset; width: 100%; }
   .fant-tabs { overflow-x: auto; }
 }
+
+/* ── CLICKABLE GAME CARDS ─────────────────────────────────────────────────── */
+.db-game-clickable {
+  cursor: pointer;
+  transition: transform 0.12s, box-shadow 0.12s;
+}
+.db-game-clickable:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 16px rgba(0,0,0,0.35);
+}
+.db-game-tap {
+  text-align: center;
+  font-size: 0.62rem;
+  color: var(--muted);
+  letter-spacing: 0.05em;
+  margin-top: 0.35rem;
+  opacity: 0.7;
+}
+.db-game-clickable:hover .db-game-tap { opacity: 1; color: var(--red); }
+.db-game-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-top: 0.35rem;
+  min-height: 1.2rem;
+}
+.db-flo-btn {
+  font-size: 0.62rem;
+  font-weight: 700;
+  color: #e85d04;
+  text-decoration: none;
+  background: rgba(232,93,4,0.12);
+  border: 1px solid rgba(232,93,4,0.3);
+  border-radius: 4px;
+  padding: 1px 5px;
+  letter-spacing: 0.03em;
+  transition: background 0.15s;
+  white-space: nowrap;
+}
+.db-flo-btn:hover { background: rgba(232,93,4,0.25); }
+
+/* ── BOX SCORE MODAL ─────────────────────────────────────────────────────── */
+.bs-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.85);
+  z-index: 300;
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  padding: 2rem 1rem 3rem;
+  overflow-y: auto;
+}
+.bs-modal {
+  position: relative;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  width: 100%;
+  max-width: 840px;
+  padding: 1.75rem 1.5rem 2rem;
+  box-shadow: 0 24px 80px rgba(0,0,0,0.7);
+}
+.bs-close {
+  position: absolute;
+  top: 1rem; right: 1rem;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  color: var(--text);
+  cursor: pointer;
+  font-size: 0.9rem;
+  width: 2rem; height: 2rem;
+  display: flex; align-items: center; justify-content: center;
+  transition: background 0.15s;
+}
+.bs-close:hover { background: var(--surface2); }
+.bs-loading {
+  text-align: center;
+  padding: 3rem;
+  color: var(--muted);
+  font-size: 0.9rem;
+}
+
+/* Header */
+.bs-header {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  margin-bottom: 1.25rem;
+  padding-bottom: 1.25rem;
+  border-bottom: 1px solid var(--border);
+}
+.bs-hcol {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.2rem;
+  text-align: center;
+}
+.bs-hteam {
+  font-size: 0.78rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--muted);
+}
+.bs-hscore {
+  font-size: 3.2rem;
+  font-weight: 900;
+  line-height: 1;
+  color: var(--text);
+}
+.bs-hscore.bs-hscore-win { color: var(--red); }
+.bs-hlabel { font-size: 0.62rem; color: var(--muted); text-transform: uppercase; }
+.bs-hmid {
+  flex: 0 0 auto;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.3rem;
+  text-align: center;
+}
+.bs-hstatus {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  padding: 2px 8px;
+  font-size: 0.68rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  color: var(--muted);
+}
+.bs-hdate { font-size: 0.75rem; font-weight: 600; }
+.bs-hvenue { font-size: 0.66rem; color: var(--muted); }
+.bs-watch-btn {
+  display: inline-block;
+  margin-top: 0.4rem;
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: #e85d04;
+  text-decoration: none;
+  background: rgba(232,93,4,0.12);
+  border: 1px solid rgba(232,93,4,0.35);
+  border-radius: 6px;
+  padding: 4px 10px;
+  transition: background 0.15s;
+}
+.bs-watch-btn:hover { background: rgba(232,93,4,0.25); }
+
+/* Linescore */
+.bs-linescore-wrap {
+  overflow-x: auto;
+  margin-bottom: 1.25rem;
+}
+.bs-linescore {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.8rem;
+}
+.bs-linescore th {
+  padding: 0.38rem 0.6rem;
+  color: var(--muted);
+  font-weight: 600;
+  font-size: 0.68rem;
+  border-bottom: 1px solid var(--border);
+  text-align: center;
+}
+.bs-linescore td {
+  padding: 0.42rem 0.6rem;
+  text-align: center;
+  border-bottom: 1px solid var(--border);
+}
+.bs-linescore .left { text-align: left; }
+.bs-ls-code { font-weight: 800; font-size: 0.82rem; }
+
+/* Sections */
+.bs-section { margin-bottom: 1.5rem; }
+.bs-section-title {
+  font-size: 0.68rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: var(--muted);
+  border-bottom: 1px solid var(--border);
+  padding-bottom: 0.4rem;
+  margin-bottom: 0.75rem;
+}
+
+/* Goal rows */
+.bs-goal-list { display: flex; flex-direction: column; gap: 0.35rem; }
+.bs-goal-row {
+  display: flex;
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: 0.45rem;
+  font-size: 0.82rem;
+  padding: 0.38rem 0.6rem;
+  border-radius: 7px;
+  background: var(--surface);
+}
+.bs-gper {
+  font-size: 0.63rem;
+  font-weight: 800;
+  background: var(--surface2);
+  border-radius: 3px;
+  padding: 1px 5px;
+  color: var(--muted);
+  white-space: nowrap;
+  flex: 0 0 auto;
+}
+.bs-gtime {
+  font-size: 0.72rem;
+  color: var(--muted);
+  flex: 0 0 3.2rem;
+}
+.bs-gcode {
+  font-size: 0.72rem;
+  font-weight: 800;
+  flex: 0 0 3.2rem;
+}
+.bs-gcode-home { color: var(--green); }
+.bs-gcode-vis  { color: var(--red);   }
+.bs-ginfo { flex: 1; display: flex; align-items: baseline; flex-wrap: wrap; gap: 0.35rem; }
+.bs-gscorer { font-weight: 700; }
+.bs-gbadge {
+  font-size: 0.6rem;
+  font-weight: 800;
+  border-radius: 3px;
+  padding: 1px 4px;
+  letter-spacing: 0.04em;
+}
+.bs-gbadge-pp { background: rgba(255,170,0,0.18); color: #ffaa00; }
+.bs-gbadge-sh { background: rgba(0,180,255,0.18); color: #00b4ff; }
+.bs-gbadge-en { background: rgba(150,150,150,0.18); color: #999; }
+.bs-gbadge-ps { background: rgba(200,0,200,0.18); color: #d050d0; }
+.bs-gassists  { color: var(--muted); font-size: 0.77rem; }
+
+/* Player / goalie tables */
+.bs-player-block { margin-bottom: 1.1rem; }
+.bs-team-label {
+  font-size: 0.68rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.07em;
+  color: var(--text);
+  margin-bottom: 0.4rem;
+}
+.bs-table-scroll { overflow-x: auto; }
+.bs-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.78rem;
+}
+.bs-table th {
+  padding: 0.3rem 0.5rem;
+  color: var(--muted);
+  font-weight: 600;
+  font-size: 0.66rem;
+  border-bottom: 1px solid var(--border);
+  text-align: center;
+}
+.bs-table td {
+  padding: 0.32rem 0.5rem;
+  text-align: center;
+  border-bottom: 1px solid var(--surface2);
+}
+.bs-table tr:last-child td { border-bottom: none; }
+.bs-table .left { text-align: left; }
+.bs-num { color: var(--muted); font-size: 0.7rem; }
+
+/* Light mode overrides */
+@media (prefers-color-scheme: light) {
+  .bs-modal { background: #fff; }
+  .bs-goal-row { background: #f5f5f5; }
+  .bs-gper { background: #e8e8e8; }
+}
