@@ -97,15 +97,21 @@ export default function Fantasy({ teamData }) {
       .order('created_at', { ascending: false });
 
     if (data) {
-      // Auto-score completed games where score is still 0
+      // Auto-score past games where score is still 0.
+      // Use date comparison — don't rely on data.js result field which may lag behind.
       const scored = await Promise.all(data.map(async row => {
-        const game = schedule.find(g => g.date === row.game_date);
-        if (game && game.result !== 'upcoming' && row.score === 0 && row.lineup?.length > 0) {
-          const score = computeScore(row.lineup, game.id, gameLog);
-          if (score > 0) {
-            await supabase.from('fantasy_lineups').update({ score }).eq('id', row.id);
-            return { ...row, score };
+        const isPast = row.game_date < today();
+        if (isPast && row.score === 0 && row.lineup?.length > 0) {
+          const game = schedule.find(g => g.date === row.game_date);
+          if (game) {
+            const score = computeScore(row.lineup, game.id, gameLog);
+            if (score > 0) {
+              await supabase.from('fantasy_lineups').update({ score }).eq('id', row.id);
+              return { ...row, score };
+            }
           }
+          // Game is past but no gameLog entries yet — persist 0 so we don't retry every load
+          await supabase.from('fantasy_lineups').update({ score: 0 }).eq('id', row.id);
         }
         return row;
       }));
@@ -401,7 +407,8 @@ export default function Fantasy({ teamData }) {
                 const players = (row.lineup ?? [])
                   .map(num => allPlayers.find(p => p.num === num))
                   .filter(Boolean);
-                const isDone  = game && game.result !== 'upcoming';
+                // A game is past when its date is before today — don't trust data.js result field
+                const isPast = row.game_date < today();
                 return (
                   <div key={row.id} className="fant-lineup-card">
                     <div className="fant-lineup-header">
@@ -414,7 +421,7 @@ export default function Fantasy({ teamData }) {
                         )}
                       </div>
                       <div className="fant-lineup-score">
-                        {isDone
+                        {isPast
                           ? <span className={`fant-score-badge${row.score > 0 ? ' positive' : ''}`}>{row.score} pts</span>
                           : <span className="fant-score-badge pending">Upcoming</span>
                         }
