@@ -175,7 +175,17 @@ export default function DraftRoom({ leagueCtx, onBack, onMyTeam }) {
         supabase.from('fantasy_draft_picks')
           .select('*').eq('league_id', leagueCtx.leagueId)
           .order('overall_pick', { ascending: true }),
-        fetch('/api/allplayers').then(r => r.ok ? r.json() : { players: [] }),
+        // Playoff leagues use playoff stats; fall back to regular season if not yet available
+        (async () => {
+          const isPlayoff = leagueCtx.leagueSeason === '2025-26 Playoffs';
+          if (isPlayoff) {
+            const r = await fetch('/api/playoffplayers');
+            const j = r.ok ? await r.json() : { players: [] };
+            if (j.players?.length > 0) return j;
+            // No playoff stats yet — fall back to regular season for draft pool
+          }
+          return fetch('/api/allplayers').then(r => r.ok ? r.json() : { players: [] });
+        })(),
       ]);
 
       const lg     = lgRes.data;

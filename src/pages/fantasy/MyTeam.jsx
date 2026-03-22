@@ -131,28 +131,36 @@ function RosterSection({ title, players, allStats, onDrop }) {
 
 // ── Main MyTeam ───────────────────────────────────────────────────────────────
 export default function MyTeam({ leagueCtx, onBack }) {
+  const isPlayoff = leagueCtx.leagueSeason === '2025-26 Playoffs';
+
   const [roster,   setRoster]   = useState([]);
   const [players,  setPlayers]  = useState([]);
+  const [poStats,  setPoStats]  = useState([]);   // playoff stats from /api/playoffplayers
   const [loading,  setLoading]  = useState(true);
   const [dropping, setDropping] = useState(false);
   const [confirmDrop, setConfirmDrop] = useState(null);
 
   useEffect(() => {
     async function load() {
-      const [rosterRes, playersRes] = await Promise.all([
+      const fetches = [
         supabase.from('fantasy_rosters')
           .select('*')
           .eq('league_team_id', leagueCtx.leagueTeamId)
           .order('position')
           .order('player_name'),
         fetch('/api/allplayers').then(r => r.ok ? r.json() : { players: [] }),
-      ]);
+      ];
+      if (isPlayoff) {
+        fetches.push(fetch('/api/playoffplayers').then(r => r.ok ? r.json() : { players: [] }));
+      }
+      const [rosterRes, playersRes, poRes] = await Promise.all(fetches);
       setRoster(rosterRes.data ?? []);
       setPlayers(playersRes.players ?? []);
+      if (poRes) setPoStats(poRes.players ?? []);
       setLoading(false);
     }
     load();
-  }, [leagueCtx.leagueTeamId]);
+  }, [leagueCtx.leagueTeamId, isPlayoff]);
 
   async function handleDrop() {
     const row = confirmDrop;
@@ -207,6 +215,61 @@ export default function MyTeam({ leagueCtx, onBack }) {
       {total === 0 && (
         <div style={{ textAlign: 'center', color: 'var(--muted)', padding: '3rem' }}>
           Your roster is empty — the draft may still be in progress.
+        </div>
+      )}
+
+      {/* ── Playoff scoring summary ──────────────────────────────────── */}
+      {isPlayoff && (
+        <div style={{ marginBottom: '1.5rem' }}>
+          <div className="espn-header">
+            <div className="espn-header-bar" style={{ background: 'gold' }} />
+            <h2>🏆 Playoff Scoring</h2>
+            <span className="subtitle">2025-26 Playoffs · Stats update after each game</span>
+          </div>
+          {poStats.length === 0 ? (
+            <div style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 8, padding: '1.25rem', textAlign: 'center', color: 'var(--muted)', fontSize: '0.85rem' }}>
+              No playoff stats yet — check back after games are played.
+              <div style={{ fontSize: '0.75rem', color: 'var(--muted2)', marginTop: '0.4rem' }}>Round 1 begins March 27</div>
+            </div>
+          ) : (
+            <div className="table-wrap">
+              <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.82rem' }}>
+                <thead>
+                  <tr style={{ borderBottom: '1px solid var(--border)' }}>
+                    <th style={{ textAlign: 'left', padding: '0.4rem 0.5rem', color: 'var(--muted)', fontWeight: 700, fontSize: '0.68rem' }}>Player</th>
+                    <th style={{ padding: '0.4rem 0.5rem', color: 'var(--muted)', fontWeight: 700, fontSize: '0.68rem' }}>Team</th>
+                    <th style={{ padding: '0.4rem 0.5rem', color: 'var(--muted)', fontWeight: 700, fontSize: '0.68rem' }}>GP</th>
+                    <th style={{ padding: '0.4rem 0.5rem', color: 'var(--muted)', fontWeight: 700, fontSize: '0.68rem' }}>G</th>
+                    <th style={{ padding: '0.4rem 0.5rem', color: 'var(--muted)', fontWeight: 700, fontSize: '0.68rem' }}>A</th>
+                    <th style={{ padding: '0.4rem 0.5rem', color: 'var(--muted)', fontWeight: 700, fontSize: '0.68rem', color: 'gold' }}>PTS</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {roster
+                    .map(row => {
+                      const po = poStats.find(p => p.player_id === row.player_id);
+                      return { ...row, poGP: po?.gp ?? 0, poG: po?.g ?? 0, poA: po?.a ?? 0, poPTS: po?.pts ?? 0 };
+                    })
+                    .sort((a, b) => b.poPTS - a.poPTS || b.poG - a.poG)
+                    .map(row => (
+                      <tr key={row.id} style={{ borderBottom: '1px solid var(--surface2)' }}>
+                        <td style={{ padding: '0.5rem', textAlign: 'left' }}>
+                          <div style={{ fontWeight: 600 }}>{row.player_name}</div>
+                          <PosBadge pos={row.position} />
+                        </td>
+                        <td style={{ padding: '0.5rem', textAlign: 'center', color: 'var(--muted)', fontSize: '0.75rem' }}>{row.player_team_code}</td>
+                        <td style={{ padding: '0.5rem', textAlign: 'center', color: row.poGP === 0 ? 'var(--muted2)' : 'var(--text)' }}>{row.poGP}</td>
+                        <td style={{ padding: '0.5rem', textAlign: 'center' }}>{row.poG || '—'}</td>
+                        <td style={{ padding: '0.5rem', textAlign: 'center' }}>{row.poA || '—'}</td>
+                        <td style={{ padding: '0.5rem', textAlign: 'center', fontWeight: 800, color: row.poPTS > 0 ? 'gold' : 'var(--muted2)' }}>
+                          {row.poPTS || '—'}
+                        </td>
+                      </tr>
+                    ))}
+                </tbody>
+              </table>
+            </div>
+          )}
         </div>
       )}
 

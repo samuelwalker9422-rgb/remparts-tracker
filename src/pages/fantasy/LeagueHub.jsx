@@ -29,6 +29,7 @@ function CreateModal({ user, onClose, onCreated }) {
   const [step,       setStep]       = useState(1);   // 1 = league settings, 2 = team name
   const [name,       setName]       = useState('');
   const [numTeams,   setNumTeams]   = useState(10);
+  const [season,     setSeason]     = useState('2025-26 Playoffs');
   const [teamName,   setTeamName]   = useState('');
   const [error,      setError]      = useState('');
   const [submitting, setSubmitting] = useState(false);
@@ -41,7 +42,7 @@ function CreateModal({ user, onClose, onCreated }) {
     try {
       const { data: league, error: e1 } = await supabase
         .from('fantasy_leagues')
-        .insert({ name: name.trim(), commissioner_id: user.id, num_teams: numTeams })
+        .insert({ name: name.trim(), commissioner_id: user.id, num_teams: numTeams, season })
         .select()
         .single();
       if (e1) throw e1;
@@ -105,7 +106,25 @@ function CreateModal({ user, onClose, onCreated }) {
 
             <div className="auth-field">
               <label>Season</label>
-              <input type="text" value="2026-27" disabled style={{ opacity: 0.5, cursor: 'not-allowed' }} />
+              <div style={{ display: 'flex', gap: '0.5rem', marginTop: '0.25rem' }}>
+                {['2025-26 Playoffs', '2026-27'].map(s => (
+                  <button
+                    key={s}
+                    type="button"
+                    onClick={() => setSeason(s)}
+                    style={{
+                      flex: 1, padding: '0.6rem', border: '1px solid',
+                      borderColor: season === s ? 'var(--red)' : 'var(--border)',
+                      borderRadius: 7, background: season === s ? 'rgba(204,0,0,0.15)' : 'var(--surface2)',
+                      color: season === s ? 'var(--red)' : 'var(--text)',
+                      fontWeight: season === s ? 800 : 400,
+                      cursor: 'pointer', fontFamily: 'inherit', fontSize: '0.8rem',
+                    }}
+                  >
+                    {s === '2025-26 Playoffs' ? '🏆 2025-26 Playoffs' : '2026-27'}
+                  </button>
+                ))}
+              </div>
             </div>
 
             {error && <div className="auth-error">{error}</div>}
@@ -429,7 +448,7 @@ export default function LeagueHub({ onEnterLeague, onTonightPickup }) {
                   <button
                     className="auth-submit"
                     style={{ marginTop: '0.25rem', padding: '0.5rem', fontSize: '0.82rem' }}
-                    onClick={() => onEnterLeague?.({ leagueId: lg.id, leagueTeamId: row.id, leagueName: lg.name, leagueStatus: lg.status, teamName: row.team_name })}
+                    onClick={() => onEnterLeague?.({ leagueId: lg.id, leagueTeamId: row.id, leagueName: lg.name, leagueStatus: lg.status, leagueSeason: lg.season, teamName: row.team_name })}
                   >
                     Enter League →
                   </button>
