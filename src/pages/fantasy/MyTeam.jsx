@@ -136,6 +136,7 @@ export default function MyTeam({ leagueCtx, onBack }) {
   const [roster,   setRoster]   = useState([]);
   const [players,  setPlayers]  = useState([]);
   const [poStats,  setPoStats]  = useState([]);   // playoff stats from /api/playoffplayers
+  const [poTeams,  setPoTeams]  = useState(null); // { activeCodes, eliminatedCodes }
   const [loading,  setLoading]  = useState(true);
   const [dropping, setDropping] = useState(false);
   const [confirmDrop, setConfirmDrop] = useState(null);
@@ -152,11 +153,13 @@ export default function MyTeam({ leagueCtx, onBack }) {
       ];
       if (isPlayoff) {
         fetches.push(fetch('/api/playoffplayers').then(r => r.ok ? r.json() : { players: [] }));
+        fetches.push(fetch('/api/playoffteams').then(r => r.ok ? r.json() : null).catch(() => null));
       }
-      const [rosterRes, playersRes, poRes] = await Promise.all(fetches);
+      const [rosterRes, playersRes, poRes, poTeamsRes] = await Promise.all(fetches);
       setRoster(rosterRes.data ?? []);
       setPlayers(playersRes.players ?? []);
       if (poRes) setPoStats(poRes.players ?? []);
+      if (poTeamsRes) setPoTeams(poTeamsRes);
       setLoading(false);
     }
     load();
@@ -219,59 +222,86 @@ export default function MyTeam({ leagueCtx, onBack }) {
       )}
 
       {/* ── Playoff scoring summary ──────────────────────────────────── */}
-      {isPlayoff && (
-        <div style={{ marginBottom: '1.5rem' }}>
-          <div className="espn-header">
-            <div className="espn-header-bar" style={{ background: 'gold' }} />
-            <h2>🏆 Playoff Scoring</h2>
-            <span className="subtitle">2025-26 Playoffs · Stats update after each game</span>
+      {isPlayoff && (() => {
+        const eliminatedSet = new Set((poTeams?.eliminatedCodes ?? []).map(c => c.toUpperCase()));
+        const isElim = code => eliminatedSet.has((code ?? '').toUpperCase());
+        const eliminatedOnRoster = poTeams ? roster.filter(r => isElim(r.player_team_code)) : [];
+        return (
+          <div style={{ marginBottom: '1.5rem' }}>
+            <div className="espn-header">
+              <div className="espn-header-bar" style={{ background: 'gold' }} />
+              <h2>🏆 Playoff Scoring</h2>
+              <span className="subtitle">2025-26 Playoffs · Stats update after each game</span>
+            </div>
+
+            {eliminatedOnRoster.length > 0 && (
+              <div style={{ background: 'rgba(204,0,0,0.08)', border: '1px solid rgba(204,0,0,0.25)', borderRadius: 8, padding: '0.75rem 1rem', marginBottom: '0.75rem', fontSize: '0.82rem', color: 'var(--red)' }}>
+                ⚠️ {eliminatedOnRoster.length} player{eliminatedOnRoster.length !== 1 ? 's' : ''} on your roster {eliminatedOnRoster.length !== 1 ? 'are' : 'is'} eliminated:{' '}
+                <strong>{eliminatedOnRoster.map(r => r.player_name).join(', ')}</strong>
+              </div>
+            )}
+
+            {poStats.length === 0 ? (
+              <div style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 8, padding: '1.25rem', textAlign: 'center', color: 'var(--muted)', fontSize: '0.85rem' }}>
+                No playoff stats yet — check back after games are played.
+                <div style={{ fontSize: '0.75rem', color: 'var(--muted2)', marginTop: '0.4rem' }}>Round 1 begins March 27</div>
+              </div>
+            ) : (
+              <div className="table-wrap">
+                <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.82rem' }}>
+                  <thead>
+                    <tr style={{ borderBottom: '1px solid var(--border)' }}>
+                      <th style={{ textAlign: 'left', padding: '0.4rem 0.5rem', color: 'var(--muted)', fontWeight: 700, fontSize: '0.68rem' }}>Player</th>
+                      <th style={{ padding: '0.4rem 0.5rem', color: 'var(--muted)', fontWeight: 700, fontSize: '0.68rem' }}>Team</th>
+                      <th style={{ padding: '0.4rem 0.5rem', color: 'var(--muted)', fontWeight: 700, fontSize: '0.68rem' }}>Status</th>
+                      <th style={{ padding: '0.4rem 0.5rem', color: 'var(--muted)', fontWeight: 700, fontSize: '0.68rem' }}>GP</th>
+                      <th style={{ padding: '0.4rem 0.5rem', color: 'var(--muted)', fontWeight: 700, fontSize: '0.68rem' }}>G</th>
+                      <th style={{ padding: '0.4rem 0.5rem', color: 'var(--muted)', fontWeight: 700, fontSize: '0.68rem' }}>A</th>
+                      <th style={{ padding: '0.4rem 0.5rem', color: 'var(--muted)', fontWeight: 700, fontSize: '0.68rem', color: 'gold' }}>PTS</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {roster
+                      .map(row => {
+                        const po = poStats.find(p => p.player_id === row.player_id);
+                        const elim = poTeams ? isElim(row.player_team_code) : false;
+                        return { ...row, poGP: po?.gp ?? 0, poG: po?.g ?? 0, poA: po?.a ?? 0, poPTS: po?.pts ?? 0, elim };
+                      })
+                      .sort((a, b) => {
+                        if (a.elim !== b.elim) return a.elim ? 1 : -1;
+                        return b.poPTS - a.poPTS || b.poG - a.poG;
+                      })
+                      .map(row => (
+                        <tr key={row.id} style={{ borderBottom: '1px solid var(--surface2)', opacity: row.elim ? 0.6 : 1 }}>
+                          <td style={{ padding: '0.5rem', textAlign: 'left' }}>
+                            <div style={{ fontWeight: 600 }}>{row.player_name}</div>
+                            <PosBadge pos={row.position} />
+                          </td>
+                          <td style={{ padding: '0.5rem', textAlign: 'center', color: 'var(--muted)', fontSize: '0.75rem' }}>{row.player_team_code}</td>
+                          <td style={{ padding: '0.5rem', textAlign: 'center' }}>
+                            {poTeams ? (
+                              row.elim
+                                ? <span style={{ fontSize: '0.65rem', fontWeight: 800, color: 'var(--muted2)', background: 'var(--surface2)', border: '1px solid var(--border)', borderRadius: 3, padding: '1px 5px', whiteSpace: 'nowrap' }}>Eliminated</span>
+                                : <span style={{ fontSize: '0.65rem', fontWeight: 800, color: 'var(--green)', whiteSpace: 'nowrap' }}>● Active</span>
+                            ) : (
+                              <span style={{ color: 'var(--muted2)', fontSize: '0.7rem' }}>—</span>
+                            )}
+                          </td>
+                          <td style={{ padding: '0.5rem', textAlign: 'center', color: row.poGP === 0 ? 'var(--muted2)' : 'var(--text)' }}>{row.poGP}</td>
+                          <td style={{ padding: '0.5rem', textAlign: 'center' }}>{row.poG || '—'}</td>
+                          <td style={{ padding: '0.5rem', textAlign: 'center' }}>{row.poA || '—'}</td>
+                          <td style={{ padding: '0.5rem', textAlign: 'center', fontWeight: 800, color: row.poPTS > 0 ? 'gold' : 'var(--muted2)' }}>
+                            {row.poPTS || '—'}
+                          </td>
+                        </tr>
+                      ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
           </div>
-          {poStats.length === 0 ? (
-            <div style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 8, padding: '1.25rem', textAlign: 'center', color: 'var(--muted)', fontSize: '0.85rem' }}>
-              No playoff stats yet — check back after games are played.
-              <div style={{ fontSize: '0.75rem', color: 'var(--muted2)', marginTop: '0.4rem' }}>Round 1 begins March 27</div>
-            </div>
-          ) : (
-            <div className="table-wrap">
-              <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.82rem' }}>
-                <thead>
-                  <tr style={{ borderBottom: '1px solid var(--border)' }}>
-                    <th style={{ textAlign: 'left', padding: '0.4rem 0.5rem', color: 'var(--muted)', fontWeight: 700, fontSize: '0.68rem' }}>Player</th>
-                    <th style={{ padding: '0.4rem 0.5rem', color: 'var(--muted)', fontWeight: 700, fontSize: '0.68rem' }}>Team</th>
-                    <th style={{ padding: '0.4rem 0.5rem', color: 'var(--muted)', fontWeight: 700, fontSize: '0.68rem' }}>GP</th>
-                    <th style={{ padding: '0.4rem 0.5rem', color: 'var(--muted)', fontWeight: 700, fontSize: '0.68rem' }}>G</th>
-                    <th style={{ padding: '0.4rem 0.5rem', color: 'var(--muted)', fontWeight: 700, fontSize: '0.68rem' }}>A</th>
-                    <th style={{ padding: '0.4rem 0.5rem', color: 'var(--muted)', fontWeight: 700, fontSize: '0.68rem', color: 'gold' }}>PTS</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {roster
-                    .map(row => {
-                      const po = poStats.find(p => p.player_id === row.player_id);
-                      return { ...row, poGP: po?.gp ?? 0, poG: po?.g ?? 0, poA: po?.a ?? 0, poPTS: po?.pts ?? 0 };
-                    })
-                    .sort((a, b) => b.poPTS - a.poPTS || b.poG - a.poG)
-                    .map(row => (
-                      <tr key={row.id} style={{ borderBottom: '1px solid var(--surface2)' }}>
-                        <td style={{ padding: '0.5rem', textAlign: 'left' }}>
-                          <div style={{ fontWeight: 600 }}>{row.player_name}</div>
-                          <PosBadge pos={row.position} />
-                        </td>
-                        <td style={{ padding: '0.5rem', textAlign: 'center', color: 'var(--muted)', fontSize: '0.75rem' }}>{row.player_team_code}</td>
-                        <td style={{ padding: '0.5rem', textAlign: 'center', color: row.poGP === 0 ? 'var(--muted2)' : 'var(--text)' }}>{row.poGP}</td>
-                        <td style={{ padding: '0.5rem', textAlign: 'center' }}>{row.poG || '—'}</td>
-                        <td style={{ padding: '0.5rem', textAlign: 'center' }}>{row.poA || '—'}</td>
-                        <td style={{ padding: '0.5rem', textAlign: 'center', fontWeight: 800, color: row.poPTS > 0 ? 'gold' : 'var(--muted2)' }}>
-                          {row.poPTS || '—'}
-                        </td>
-                      </tr>
-                    ))}
-                </tbody>
-              </table>
-            </div>
-          )}
-        </div>
-      )}
+        );
+      })()}
 
       <RosterSection title={`Forwards (${forwards.length}/13)`} players={forwards} allStats={players} onDrop={setConfirmDrop} />
       <RosterSection title={`Defence (${defence.length}/7)`}    players={defence}  allStats={players} onDrop={setConfirmDrop} />

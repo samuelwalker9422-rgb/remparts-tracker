@@ -141,18 +141,19 @@ function DraftComplete({ onMyTeam }) {
 
 // ── Main DraftRoom ────────────────────────────────────────────────────────────
 export default function DraftRoom({ leagueCtx, onBack, onMyTeam }) {
-  const [user,     setUser]     = useState(null);
-  const [league,   setLeague]   = useState(null);
-  const [teams,    setTeams]    = useState([]);   // ordered by draft_position
-  const [picks,    setPicks]    = useState([]);
-  const [players,  setPlayers]  = useState([]);
-  const [loading,  setLoading]  = useState(true);
-  const [drafting, setDrafting] = useState(false);
-  const [timeLeft, setTimeLeft] = useState(90);
-  const [search,   setSearch]   = useState('');
-  const [posFilter, setPosFilter] = useState('ALL');
-  const [sortBy,   setSortBy]   = useState('pts');
-  const [draftErr, setDraftErr] = useState('');
+  const [user,       setUser]       = useState(null);
+  const [league,     setLeague]     = useState(null);
+  const [teams,      setTeams]      = useState([]);   // ordered by draft_position
+  const [picks,      setPicks]      = useState([]);
+  const [players,    setPlayers]    = useState([]);
+  const [poTeams,    setPoTeams]    = useState(null); // { activeCodes, eliminatedCodes } or null
+  const [loading,    setLoading]    = useState(true);
+  const [drafting,   setDrafting]   = useState(false);
+  const [timeLeft,   setTimeLeft]   = useState(90);
+  const [search,     setSearch]     = useState('');
+  const [posFilter,  setPosFilter]  = useState('ALL');
+  const [sortBy,     setSortBy]     = useState('pts');
+  const [draftErr,   setDraftErr]   = useState('');
 
   const picksRef   = useRef([]);
   const teamsRef   = useRef([]);
@@ -165,7 +166,7 @@ export default function DraftRoom({ leagueCtx, onBack, onMyTeam }) {
     supabase.auth.getUser().then(({ data }) => setUser(data?.user ?? null));
 
     async function init() {
-      const [lgRes, teamsRes, picksRes, playersRes] = await Promise.all([
+      const [lgRes, teamsRes, picksRes, playersRes, poTeamsRes] = await Promise.all([
         supabase.from('fantasy_leagues').select('*').eq('id', leagueCtx.leagueId).single(),
         supabase.from('fantasy_league_teams')
           .select('id, team_name, user_id, draft_position')
@@ -186,6 +187,10 @@ export default function DraftRoom({ leagueCtx, onBack, onMyTeam }) {
           }
           return fetch('/api/allplayers').then(r => r.ok ? r.json() : { players: [] });
         })(),
+        // Playoff eligibility
+        leagueCtx.leagueSeason === '2025-26 Playoffs'
+          ? fetch('/api/playoffteams').then(r => r.ok ? r.json() : null).catch(() => null)
+          : Promise.resolve(null),
       ]);
 
       const lg     = lgRes.data;
@@ -197,6 +202,7 @@ export default function DraftRoom({ leagueCtx, onBack, onMyTeam }) {
       setTeams(tms);
       setPicks(pks);
       setPlayers(plys);
+      if (poTeamsRes) setPoTeams(poTeamsRes);
       picksRef.current  = pks;
       teamsRef.current  = tms;
       playersRef.current = plys;
@@ -386,6 +392,10 @@ export default function DraftRoom({ leagueCtx, onBack, onMyTeam }) {
     return <div className="page"><DraftComplete onMyTeam={onMyTeam} /></div>;
   }
 
+  // ── Playoff eligibility helpers ───────────────────────────────────────────
+  const eliminatedSet = new Set((poTeams?.eliminatedCodes ?? []).map(c => c.toUpperCase()));
+  function isEliminated(teamCode) { return eliminatedSet.has((teamCode ?? '').toUpperCase()); }
+
   // ── Filtered player pool ──────────────────────────────────────────────────
   const filteredPlayers = players
     .filter(p => {
@@ -395,6 +405,12 @@ export default function DraftRoom({ leagueCtx, onBack, onMyTeam }) {
       return true;
     })
     .sort((a, b) => {
+      // Eliminated players always sink to bottom (unless searching by name)
+      if (!search && poTeams) {
+        const aElim = isEliminated(a.team_code) ? 1 : 0;
+        const bElim = isEliminated(b.team_code) ? 1 : 0;
+        if (aElim !== bElim) return aElim - bElim;
+      }
       if (sortBy === 'pts') return b.pts - a.pts || b.g - a.g;
       if (sortBy === 'g')   return b.g - a.g;
       if (sortBy === 'a')   return b.a - a.a;
@@ -557,8 +573,10 @@ export default function DraftRoom({ leagueCtx, onBack, onMyTeam }) {
             <div className="dr-player-list">
               {filteredPlayers.map(p => {
                 const isDrafted = draftedSet.has(p.player_id);
+                const elim = poTeams ? isEliminated(p.team_code) : false;
                 return (
-                  <div key={p.player_id} className={`dr-player-row${isDrafted ? ' dr-drafted' : ''}`}>
+                  <div key={p.player_id} className={`dr-player-row${isDrafted ? ' dr-drafted' : ''}`}
+                    style={elim && !isDrafted ? { opacity: 0.55 } : undefined}>
                     <img
                       src={p.photo_url} alt=""
                       className="dr-player-photo"
@@ -568,6 +586,11 @@ export default function DraftRoom({ leagueCtx, onBack, onMyTeam }) {
                       <div style={{ display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
                         <span style={{ fontWeight: 700, fontSize: '0.85rem', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{p.name}</span>
                         <PosBadge pos={p.position} />
+                        {poTeams && (
+                          elim
+                            ? <span style={{ fontSize: '0.55rem', fontWeight: 800, color: 'var(--muted2)', background: 'var(--surface2)', border: '1px solid var(--border)', borderRadius: 3, padding: '1px 4px', flexShrink: 0 }}>Eliminated</span>
+                            : <span style={{ fontSize: '0.7rem', flexShrink: 0 }} title="Playoff active">🟢</span>
+                        )}
                       </div>
                       <div style={{ fontSize: '0.68rem', color: 'var(--muted)', marginTop: '1px' }}>
                         {p.team_code} · {p.gp}GP · {p.g}G · {p.a}A · <strong>{p.pts}PTS</strong>

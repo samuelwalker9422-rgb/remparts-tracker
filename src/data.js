@@ -40,8 +40,9 @@ export const skaters = [
 ];
 
 export const goalies = [
-  { num: 33, name: "Patrick Déniger",   pos: "G", gp: 29, min: 1689, ga: 67, saves: 665, shots: 732, gaa: 2.38, svPct: 90.8, photo: photo(21311) },
-  { num: 73, name: "Benjamin Lelièvre", pos: "G", gp: 21, min: 1048, ga: 60, saves: 401, shots: 461, gaa: 3.43, svPct: 87.0, photo: photo(20224) },
+  { num: 33, name: "Patrick Déniger",       pos: "G", gp: 29, min: 1689, ga: 67, saves: 665, shots: 732, gaa: 2.38, svPct: 90.8, photo: photo(21311) },
+  { num: 73, name: "Benjamin Lelièvre",     pos: "G", gp: 21, min: 1048, ga: 60, saves: 401, shots: 461, gaa: 3.43, svPct: 87.0, photo: photo(20224) },
+  { num: 31, name: "Louis-Antoine Denault", pos: "G", gp: 17, min:  954, ga: 43, saves: 442, shots: 485, gaa: 2.70, svPct: 91.1, photo: photo(20480) },
 ];
 
 // tz = IANA timezone of the venue (not the viewer's browser)
@@ -65,7 +66,7 @@ export const schedule = [
   { id: 14, date: "2026-03-12", time: "19:00", tz: "America/Toronto",  opponent: "Tigres",     home: false, gf: 4, ga: 1, result: "W"        },
   { id: 15, date: "2026-03-13", time: "19:00", tz: "America/Toronto",  opponent: "Olympiques", home: false, gf: 3, ga: 1, result: "W"        },
   { id: 16, date: "2026-03-15", time: "15:00", tz: "America/Toronto",  opponent: "Phoenix",    home: true,  gf: 1, ga: 4, result: "L"        },
-  { id: 17, date: "2026-03-20", time: "19:00", tz: "America/Toronto",  opponent: "Saguenéens", home: true,  gf: null, ga: null, result: "upcoming",
+  { id: 17, date: "2026-03-20", time: "19:00", tz: "America/Toronto",  opponent: "Saguenéens", home: true,  gf: 0, ga: 1, result: "OTL",
     scratches: [
       { num: 19, reason: 'HS' },   // Brady — Healthy Scratch
       { num: 13, reason: 'IR' },   // Karabaev — Injured
@@ -191,6 +192,14 @@ export const gameLog = [
   {gameId:16,num:27,g:0,a:0},{gameId:16,num:29,g:0,a:1},{gameId:16,num:37,g:0,a:0},
   {gameId:16,num:55,g:0,a:0},{gameId:16,num:63,g:0,a:0},{gameId:16,num:71,g:0,a:0},
   {gameId:16,num:86,g:0,a:0},{gameId:16,num:88,g:0,a:0},{gameId:16,num:91,g:0,a:0},
+  // Game 17 — Mar 20 vs Saguenéens 0-1 OTL (shutout — all skaters 0G 0A)
+  // Scratches: 13 (IR), 19 (HS), 63 (SUS), 73 (IR), 77 (IR)
+  {gameId:17,num:5,g:0,a:0},{gameId:17,num:6,g:0,a:0},{gameId:17,num:9,g:0,a:0},
+  {gameId:17,num:14,g:0,a:0},{gameId:17,num:15,g:0,a:0},{gameId:17,num:16,g:0,a:0},
+  {gameId:17,num:21,g:0,a:0},{gameId:17,num:24,g:0,a:0},{gameId:17,num:25,g:0,a:0},
+  {gameId:17,num:26,g:0,a:0},{gameId:17,num:27,g:0,a:0},{gameId:17,num:29,g:0,a:0},
+  {gameId:17,num:37,g:0,a:0},{gameId:17,num:55,g:0,a:0},{gameId:17,num:71,g:0,a:0},
+  {gameId:17,num:86,g:0,a:0},{gameId:17,num:88,g:0,a:0},{gameId:17,num:91,g:0,a:0},
 ];
 
 // ─── PLAYOFFS ───────────────────────────────────────────────────────────────
@@ -203,4 +212,11 @@ export const playoffSchedule = [
 // Playoff per-game scoring log — same format as gameLog: { gameId, num, g, a }
 // gameId matches an id in playoffSchedule above.
 export const playoffGameLog = [
+];
+
+// Goalie per-game log — separate from skater gameLog because scoring categories differ.
+// Fields: gameId (matches schedule id), num (jersey), ga, saves, win, shutout
+// Scoring: saves×0.2 + win?5:0 + shutout?4:0 − ga
+export const goalieLog = [
+  { gameId: 17, num: 33, date: '2026-03-20', opponent: 'Saguenéens', result: 'OTL', ga: 1, saves: 24, win: false, shutout: false },
 ];
