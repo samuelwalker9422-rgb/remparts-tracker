@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '../../lib/supabase';
+import { useFantasyScoring } from '../../hooks/useFantasyScoring';
 
 function PosBadge({ pos }) {
   const colors = { F: '#cc6600', D: '#0077cc', G: '#7700cc' };
@@ -133,6 +134,11 @@ function RosterSection({ title, players, allStats, onDrop }) {
 export default function MyTeam({ leagueCtx, onBack }) {
   const isPlayoff = leagueCtx.leagueSeason === '2025-26 Playoffs';
 
+  // Fantasy scoring — always called (hook rules), only used when isPlayoff
+  const { teamScores } = useFantasyScoring(isPlayoff ? leagueCtx.leagueId : null);
+  const myScore  = teamScores.find(t => t.leagueTeamId === leagueCtx.leagueTeamId);
+  const fptsMap  = Object.fromEntries((myScore?.playerBreakdown ?? []).map(p => [p.player_id, p.fpts]));
+
   const [roster,   setRoster]   = useState([]);
   const [players,  setPlayers]  = useState([]);
   const [poStats,  setPoStats]  = useState([]);   // playoff stats from /api/playoffplayers
@@ -257,19 +263,21 @@ export default function MyTeam({ leagueCtx, onBack }) {
                       <th style={{ padding: '0.4rem 0.5rem', color: 'var(--muted)', fontWeight: 700, fontSize: '0.68rem' }}>GP</th>
                       <th style={{ padding: '0.4rem 0.5rem', color: 'var(--muted)', fontWeight: 700, fontSize: '0.68rem' }}>G</th>
                       <th style={{ padding: '0.4rem 0.5rem', color: 'var(--muted)', fontWeight: 700, fontSize: '0.68rem' }}>A</th>
-                      <th style={{ padding: '0.4rem 0.5rem', color: 'var(--muted)', fontWeight: 700, fontSize: '0.68rem', color: 'gold' }}>PTS</th>
+                      <th style={{ padding: '0.4rem 0.5rem', color: 'var(--muted)', fontWeight: 700, fontSize: '0.68rem' }}>PTS</th>
+                      <th style={{ padding: '0.4rem 0.5rem', fontWeight: 700, fontSize: '0.68rem', color: 'gold' }}>FPTS</th>
                     </tr>
                   </thead>
                   <tbody>
                     {roster
                       .map(row => {
-                        const po = poStats.find(p => p.player_id === row.player_id);
+                        const po   = poStats.find(p => p.player_id === row.player_id);
                         const elim = poTeams ? isElim(row.player_team_code) : false;
-                        return { ...row, poGP: po?.gp ?? 0, poG: po?.g ?? 0, poA: po?.a ?? 0, poPTS: po?.pts ?? 0, elim };
+                        const fpts = fptsMap[row.player_id] ?? 0;
+                        return { ...row, poGP: po?.gp ?? 0, poG: po?.g ?? 0, poA: po?.a ?? 0, poPTS: po?.pts ?? 0, elim, fpts };
                       })
                       .sort((a, b) => {
                         if (a.elim !== b.elim) return a.elim ? 1 : -1;
-                        return b.poPTS - a.poPTS || b.poG - a.poG;
+                        return b.fpts - a.fpts || b.poPTS - a.poPTS;
                       })
                       .map(row => (
                         <tr key={row.id} style={{ borderBottom: '1px solid var(--surface2)', opacity: row.elim ? 0.6 : 1 }}>
@@ -290,8 +298,9 @@ export default function MyTeam({ leagueCtx, onBack }) {
                           <td style={{ padding: '0.5rem', textAlign: 'center', color: row.poGP === 0 ? 'var(--muted2)' : 'var(--text)' }}>{row.poGP}</td>
                           <td style={{ padding: '0.5rem', textAlign: 'center' }}>{row.poG || '—'}</td>
                           <td style={{ padding: '0.5rem', textAlign: 'center' }}>{row.poA || '—'}</td>
-                          <td style={{ padding: '0.5rem', textAlign: 'center', fontWeight: 800, color: row.poPTS > 0 ? 'gold' : 'var(--muted2)' }}>
-                            {row.poPTS || '—'}
+                          <td style={{ padding: '0.5rem', textAlign: 'center' }}>{row.poPTS || '—'}</td>
+                          <td style={{ padding: '0.5rem', textAlign: 'center', fontWeight: 800, color: row.fpts > 0 ? 'gold' : 'var(--muted2)' }}>
+                            {row.fpts > 0 ? (Number.isInteger(row.fpts) ? row.fpts : row.fpts.toFixed(1)) : '—'}
                           </td>
                         </tr>
                       ))}

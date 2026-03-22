@@ -291,7 +291,7 @@ function JoinModal({ user, onClose, onJoined }) {
 }
 
 // ── Main Component ────────────────────────────────────────────────────────────
-export default function LeagueHub({ onEnterLeague, onTonightPickup }) {
+export default function LeagueHub({ onEnterLeague, onTonightPickup, onStandings }) {
   const [user,      setUser]      = useState(null);
   const [loading,   setLoading]   = useState(true);
   const [leagues,   setLeagues]   = useState([]);
@@ -445,13 +445,27 @@ export default function LeagueHub({ onEnterLeague, onTonightPickup }) {
                       Invite code: <strong style={{ color: 'var(--muted)', letterSpacing: '0.1em' }}>{lg.invite_code}</strong>
                     </div>
                   )}
-                  <button
-                    className="auth-submit"
-                    style={{ marginTop: '0.25rem', padding: '0.5rem', fontSize: '0.82rem' }}
-                    onClick={() => onEnterLeague?.({ leagueId: lg.id, leagueTeamId: row.id, leagueName: lg.name, leagueStatus: lg.status, leagueSeason: lg.season, teamName: row.team_name })}
-                  >
-                    Enter League →
-                  </button>
+                  <div style={{ display: 'flex', gap: '0.5rem', marginTop: '0.25rem' }}>
+                    <button
+                      className="auth-submit"
+                      style={{ flex: 1, padding: '0.5rem', fontSize: '0.82rem' }}
+                      onClick={() => onEnterLeague?.({ leagueId: lg.id, leagueTeamId: row.id, leagueName: lg.name, leagueStatus: lg.status, leagueSeason: lg.season, teamName: row.team_name })}
+                    >
+                      Enter League →
+                    </button>
+                    {lg.status === 'active' && (
+                      <button
+                        style={{
+                          padding: '0.5rem 0.75rem', fontSize: '0.82rem', fontFamily: 'inherit',
+                          background: 'rgba(255,215,0,0.12)', border: '1px solid rgba(255,215,0,0.3)',
+                          color: 'gold', borderRadius: 7, cursor: 'pointer', fontWeight: 700, flexShrink: 0,
+                        }}
+                        onClick={() => onStandings?.({ leagueId: lg.id, leagueTeamId: row.id, leagueName: lg.name, leagueStatus: lg.status, leagueSeason: lg.season, teamName: row.team_name })}
+                      >
+                        📊 Standings
+                      </button>
+                    )}
+                  </div>
                 </div>
               );
             })}

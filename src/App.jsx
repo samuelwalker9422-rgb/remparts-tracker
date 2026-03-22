@@ -8,9 +8,10 @@ import Standings from './pages/Standings';
 import Playoffs from './pages/Playoffs';
 import GameRecap from './pages/GameRecap';
 import Fantasy from './pages/Fantasy';
-import LeagueHub  from './pages/fantasy/LeagueHub';
-import DraftRoom  from './pages/fantasy/DraftRoom';
-import MyTeam     from './pages/fantasy/MyTeam';
+import LeagueHub       from './pages/fantasy/LeagueHub';
+import DraftRoom       from './pages/fantasy/DraftRoom';
+import MyTeam          from './pages/fantasy/MyTeam';
+import LeagueStandings from './pages/fantasy/LeagueStandings';
 import { useRosterStats } from './hooks/useRosterStats';
 import { team, skaters as staticSkaters, goalies, schedule, gameLog, goalieLog, playoffSchedule, playoffGameLog } from './data';
 
@@ -61,6 +62,7 @@ export default function App() {
               ? 'MyTeam' : 'DraftRoom';
             setPage(dest);
           }}
+          onStandings={ctx => { setLeagueCtx(ctx); setPage('LeagueStandings'); }}
           onTonightPickup={() => setPage('FantasyTonight')}
         />;
       case 'DraftRoom':
@@ -71,6 +73,11 @@ export default function App() {
         />;
       case 'MyTeam':
         return <MyTeam
+          leagueCtx={leagueCtx}
+          onBack={() => setPage('Fantasy')}
+        />;
+      case 'LeagueStandings':
+        return <LeagueStandings
           leagueCtx={leagueCtx}
           onBack={() => setPage('Fantasy')}
         />;
