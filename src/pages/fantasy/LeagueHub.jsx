@@ -429,7 +429,7 @@ export default function LeagueHub({ onEnterLeague, onTonightPickup }) {
                   <button
                     className="auth-submit"
                     style={{ marginTop: '0.25rem', padding: '0.5rem', fontSize: '0.82rem' }}
-                    onClick={() => onEnterLeague?.({ leagueId: lg.id, leagueTeamId: row.id, leagueName: lg.name })}
+                    onClick={() => onEnterLeague?.({ leagueId: lg.id, leagueTeamId: row.id, leagueName: lg.name, leagueStatus: lg.status, teamName: row.team_name })}
                   >
                     Enter League →
                   </button>

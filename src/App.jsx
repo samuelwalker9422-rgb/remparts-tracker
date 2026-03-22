@@ -8,7 +8,9 @@ import Standings from './pages/Standings';
 import Playoffs from './pages/Playoffs';
 import GameRecap from './pages/GameRecap';
 import Fantasy from './pages/Fantasy';
-import LeagueHub from './pages/fantasy/LeagueHub';
+import LeagueHub  from './pages/fantasy/LeagueHub';
+import DraftRoom  from './pages/fantasy/DraftRoom';
+import MyTeam     from './pages/fantasy/MyTeam';
 import { useRosterStats } from './hooks/useRosterStats';
 import { team, skaters as staticSkaters, goalies, schedule, gameLog, goalieLog, playoffSchedule, playoffGameLog } from './data';
 
@@ -53,8 +55,24 @@ export default function App() {
       case 'GameRecap':  return <GameRecap gameDate={gameDate} onBack={() => setPage('Schedule')} teamData={teamData} />;
       case 'Fantasy':
         return <LeagueHub
-          onEnterLeague={ctx => { setLeagueCtx(ctx); /* Phase 3: setPage('LeaguePage') */ }}
+          onEnterLeague={ctx => {
+            setLeagueCtx(ctx);
+            const dest = (ctx.leagueStatus === 'active' || ctx.leagueStatus === 'complete')
+              ? 'MyTeam' : 'DraftRoom';
+            setPage(dest);
+          }}
           onTonightPickup={() => setPage('FantasyTonight')}
+        />;
+      case 'DraftRoom':
+        return <DraftRoom
+          leagueCtx={leagueCtx}
+          onBack={() => setPage('Fantasy')}
+          onMyTeam={() => setPage('MyTeam')}
+        />;
+      case 'MyTeam':
+        return <MyTeam
+          leagueCtx={leagueCtx}
+          onBack={() => setPage('Fantasy')}
         />;
       case 'FantasyTonight': return <Fantasy teamData={teamData} />;
       default:           return <Dashboard onNav={setPage} teamData={teamData} />;
