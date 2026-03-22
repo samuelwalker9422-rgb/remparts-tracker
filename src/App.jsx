@@ -8,8 +8,9 @@ import Standings from './pages/Standings';
 import Playoffs from './pages/Playoffs';
 import GameRecap from './pages/GameRecap';
 import Fantasy from './pages/Fantasy';
+import LeagueHub from './pages/fantasy/LeagueHub';
 import { useRosterStats } from './hooks/useRosterStats';
-import { team, skaters as staticSkaters, goalies, schedule, gameLog, playoffSchedule, playoffGameLog } from './data';
+import { team, skaters as staticSkaters, goalies, schedule, gameLog, goalieLog, playoffSchedule, playoffGameLog } from './data';
 
 const PAGES = [
   { key: 'Dashboard', label: 'Home' },
@@ -18,12 +19,14 @@ const PAGES = [
   { key: 'Stats',     label: 'Stats' },
   { key: 'Standings', label: 'Standings' },
   { key: 'Playoffs',  label: '🏆 Playoffs' },
-  { key: 'Fantasy',   label: '🏒 Fantasy'  },
+  { key: 'Fantasy',       label: '🏒 Fantasy'   },
+  { key: 'FantasyTonight', label: '🎯 Tonight'  },
 ];
 
 export default function App() {
   const [page, setPage]         = useState('Dashboard');
   const [gameDate, setGameDate] = useState(null);
+  const [leagueCtx, setLeagueCtx] = useState(null);  // { leagueId, leagueTeamId, leagueName }
   const [darkMode, setDarkMode] = useState(
     () => localStorage.getItem('theme') !== 'light'
   );
@@ -32,7 +35,7 @@ export default function App() {
   const { skaters: liveSkaters, leagueSkaters } = useRosterStats();
   const skaters = liveSkaters.length > 0 ? liveSkaters : staticSkaters;
 
-  const teamData = { team, skaters, goalies, leagueSkaters, schedule, gameLog, playoffSchedule, playoffGameLog };
+  const teamData = { team, skaters, goalies, leagueSkaters, schedule, gameLog, goalieLog, playoffSchedule, playoffGameLog };
 
   useEffect(() => {
     document.documentElement.setAttribute('data-theme', darkMode ? 'dark' : 'light');
@@ -48,7 +51,12 @@ export default function App() {
       case 'Standings':  return <Standings teamData={teamData} />;
       case 'Playoffs':   return <Playoffs />;
       case 'GameRecap':  return <GameRecap gameDate={gameDate} onBack={() => setPage('Schedule')} teamData={teamData} />;
-      case 'Fantasy':    return <Fantasy teamData={teamData} />;
+      case 'Fantasy':
+        return <LeagueHub
+          onEnterLeague={ctx => { setLeagueCtx(ctx); /* Phase 3: setPage('LeaguePage') */ }}
+          onTonightPickup={() => setPage('FantasyTonight')}
+        />;
+      case 'FantasyTonight': return <Fantasy teamData={teamData} />;
       default:           return <Dashboard onNav={setPage} teamData={teamData} />;
     }
   };

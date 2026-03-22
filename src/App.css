@@ -2280,3 +2280,29 @@ tr:hover td { background: #1e1e1e; }
   .bs-goal-row { background: #f5f5f5; }
   .bs-gper { background: #e8e8e8; }
 }
+
+/* ── League Hub ────────────────────────────────────────────────────────────── */
+.lh-action-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  gap: 0.5rem;
+  padding: 2rem 1.25rem;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-top: 3px solid var(--red);
+  border-radius: 10px;
+  cursor: pointer;
+  transition: border-color 0.15s, background 0.15s;
+  font-family: inherit;
+  color: var(--text);
+  width: 100%;
+}
+.lh-action-card:hover {
+  border-color: var(--red);
+  background: var(--surface2);
+}
+.lh-action-icon  { font-size: 2.25rem; }
+.lh-action-title { font-size: 1rem; font-weight: 800; }
+.lh-action-sub   { font-size: 0.78rem; color: var(--muted); line-height: 1.4; }
