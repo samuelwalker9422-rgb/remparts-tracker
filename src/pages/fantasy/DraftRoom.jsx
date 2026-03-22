@@ -225,9 +225,30 @@ export default function DraftRoom({ leagueCtx, onBack, onMyTeam }) {
         .from('fantasy_draft_picks')
         .select('*').eq('league_id', leagueCtx.leagueId)
         .order('overall_pick', { ascending: true });
-      if (data && data.length !== picksRef.current.length) {
+      if (!data) return;
+      if (data.length !== picksRef.current.length) {
         picksRef.current = data;
         setPicks(data);
+      }
+      // Commissioner's client retries the completion update if picks are all in but status hasn't flipped.
+      // Non-commissioner clients will see this condition too but their update will be blocked by RLS — that's fine.
+      const total = 25 * teamsRef.current.length;
+      if (data.length >= total && total > 0) {
+        const { data: lg } = await supabase
+          .from('fantasy_leagues')
+          .select('status, draft_status')
+          .eq('id', leagueCtx.leagueId)
+          .single();
+        if (lg && lg.draft_status !== 'complete') {
+          const { error: eComplete } = await supabase.from('fantasy_leagues')
+            .update({ status: 'active', draft_status: 'complete' })
+            .eq('id', leagueCtx.leagueId);
+          if (eComplete) {
+            console.error('Draft completion update failed (poll):', eComplete.message);
+          } else {
+            setLeague(prev => ({ ...prev, status: 'active', draft_status: 'complete' }));
+          }
+        }
       }
     }, 3000);
     return () => clearInterval(pollRef.current);
@@ -321,11 +342,15 @@ export default function DraftRoom({ leagueCtx, onBack, onMyTeam }) {
       if (e2) throw e2;
 
       // Check if draft is done
-      const newTotal = overall;
-      if (newTotal >= 25 * numTeams) {
-        await supabase.from('fantasy_leagues')
+      if (overall >= 25 * numTeams) {
+        const { error: eComplete } = await supabase.from('fantasy_leagues')
           .update({ status: 'active', draft_status: 'complete' })
           .eq('id', leagueCtx.leagueId);
+        if (eComplete) {
+          // RLS blocks non-commissioners — poll loop will retry when commissioner's client catches up
+          console.error('Draft completion update failed (last-pick client):', eComplete.message);
+        }
+        // Always flip local state so the banner shows regardless of who made the last pick
         setLeague(prev => ({ ...prev, status: 'active', draft_status: 'complete' }));
       }
 

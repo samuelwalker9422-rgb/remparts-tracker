@@ -453,7 +453,7 @@ export default function LeagueHub({ onEnterLeague, onTonightPickup, onStandings 
                     >
                       Enter League →
                     </button>
-                    {lg.status === 'active' && (
+                    {(lg.status === 'active' || lg.draft_status === 'complete') && (
                       <button
                         style={{
                           padding: '0.5rem 0.75rem', fontSize: '0.82rem', fontFamily: 'inherit',
