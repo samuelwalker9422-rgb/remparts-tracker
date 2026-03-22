@@ -3,17 +3,32 @@ import { supabase, supabaseReady } from '../lib/supabase';
 import AuthModal from '../components/AuthModal';
 
 // ── Scoring ───────────────────────────────────────────────────────────────────
-// ESPN standard hockey scoring applied to categories available in gameLog (g, a per game).
-// PPG (+1), PPA (+1), SHG (+2), +/-, and goalie stats (W/SO/SV/GA) require per-game
-// breakdowns from the QMJHL API that are not available — only season totals are returned.
-// Hat trick bonus IS computable because g is stored per entry.
-function computeScore(lineupNums, gameId, gameLog) {
+// Skaters: G×3 + A×2 + hat-trick bonus (+3 for 3+ goals)
+// Goalies: saves×0.2 + win?+5 + shutout?+4 − ga×1  (rounded to 1 decimal)
+function computeScore(lineupNums, gameId, gameLog, goalieLog, allPlayers) {
   return lineupNums.reduce((total, num) => {
-    const entries = gameLog.filter(e => e.gameId === gameId && e.num === num);
+    const pos = allPlayers.find(p => p.num === num)?.pos;
+
+    if (pos === 'G') {
+      // Single-team fantasy: credit whoever actually played in net that game,
+      // regardless of which goalie the user picked.
+      const entry = (goalieLog ?? []).find(e => e.gameId === gameId);
+      if (!entry) return total;
+      const pts = Math.round((
+        entry.saves * 0.2 +
+        (entry.win     ? 5 : 0) +
+        (entry.shutout ? 4 : 0) -
+        entry.ga
+      ) * 10) / 10;
+      return total + Math.max(0, pts);
+    }
+
+    // Skater
+    const entries = (gameLog ?? []).filter(e => e.gameId === gameId && e.num === num);
     return total + entries.reduce((s, e) => {
       const goals    = e.g * 3;
       const assists  = e.a * 2;
-      const hatTrick = e.g >= 3 ? 3 : 0;   // +3 bonus for 3+ goals in one game
+      const hatTrick = e.g >= 3 ? 3 : 0;
       return s + goals + assists + hatTrick;
     }, 0);
   }, 0);
@@ -44,7 +59,7 @@ function fmtDate(d) {
 
 // ── Main Component ────────────────────────────────────────────────────────────
 export default function Fantasy({ teamData }) {
-  const { skaters, goalies, schedule, gameLog } = teamData;
+  const { skaters, goalies, schedule, gameLog, goalieLog } = teamData;
 
   const [tab, setTab]               = useState('pick');
   const [user, setUser]             = useState(null);
@@ -57,8 +72,18 @@ export default function Fantasy({ teamData }) {
   const [submitted, setSubmitted]   = useState(false);
   const [loadingL, setLoadingL]     = useState(false);
 
-  // Today's upcoming game
-  const todayGame  = schedule.find(g => g.date === today() && g.result === 'upcoming') ?? null;
+  // Live games (regular + playoff) for today detection
+  const [liveGames, setLiveGames] = useState(null);  // null = still loading
+  useEffect(() => {
+    fetch('/api/games')
+      .then(r => r.ok ? r.json() : Promise.reject(r.status))
+      .then(j => setLiveGames([...(j.games ?? []), ...(j.playoffGames ?? [])]))
+      .catch(() => setLiveGames([]));  // fallback to empty → will use schedule below
+  }, []);
+
+  // Today's upcoming game — check live API first (covers playoffs), fall back to data.js
+  const gameSource = liveGames ?? schedule;
+  const todayGame  = gameSource.find(g => g.date === today() && g.result === 'upcoming') ?? null;
   const locked     = todayGame ? isPuckDrop(todayGame) : false;
   const scratchMap = Object.fromEntries((todayGame?.scratches ?? []).map(s => [s.num, s.reason]));
 
@@ -86,7 +111,10 @@ export default function Fantasy({ teamData }) {
   }, [tab, user]);
 
   useEffect(() => {
-    if (tab === 'leaderboard') loadLeaderboard();
+    if (tab !== 'leaderboard') return;
+    loadLeaderboard();
+    const id = setInterval(loadLeaderboard, 30_000);
+    return () => clearInterval(id);
   }, [tab]);
 
   async function loadMyLineups() {
@@ -101,17 +129,20 @@ export default function Fantasy({ teamData }) {
       // Use date comparison — don't rely on data.js result field which may lag behind.
       const scored = await Promise.all(data.map(async row => {
         const isPast = row.game_date < today();
+        // score === 0 means "needs scoring" — recompute with goalie support now available
         if (isPast && row.score === 0 && row.lineup?.length > 0) {
           const game = schedule.find(g => g.date === row.game_date);
           if (game) {
-            const score = computeScore(row.lineup, game.id, gameLog);
-            if (score > 0) {
-              await supabase.from('fantasy_lineups').update({ score }).eq('id', row.id);
-              return { ...row, score };
+            const raw   = computeScore(row.lineup, game.id, gameLog, goalieLog, allPlayers);
+            const score = Math.round(raw);   // DB column is INTEGER — must be whole number
+            if (score !== row.score) {
+              const { error } = await supabase
+                .from('fantasy_lineups')
+                .update({ score })
+                .eq('id', row.id);
+              if (!error) return { ...row, score };
             }
           }
-          // Game is past but no gameLog entries yet — persist 0 so we don't retry every load
-          await supabase.from('fantasy_lineups').update({ score: 0 }).eq('id', row.id);
         }
         return row;
       }));
@@ -352,11 +383,11 @@ export default function Fantasy({ teamData }) {
                     <span className="fant-scoring-active">G +3</span>
                     <span className="fant-scoring-active">A +2</span>
                     <span className="fant-scoring-active">Hat Trick +3</span>
-                    <span className="fant-scoring-unavail" title="Per-game data not available from QMJHL API">PPG +1 N/A</span>
-                    <span className="fant-scoring-unavail" title="Per-game data not available from QMJHL API">PPA +1 N/A</span>
-                    <span className="fant-scoring-unavail" title="Per-game data not available from QMJHL API">SHG +2 N/A</span>
-                    <span className="fant-scoring-unavail" title="Per-game data not available from QMJHL API">+/− N/A</span>
-                    <span className="fant-scoring-unavail" title="No goalie game log available">G: W/SO/SV N/A</span>
+                    <span className="fant-scoring-active" title="Goalie: saves × 0.2">G: SV ×0.2</span>
+                    <span className="fant-scoring-active" title="Goalie win bonus">G: W +5</span>
+                    <span className="fant-scoring-active" title="Goalie shutout bonus">G: SO +4</span>
+                    <span className="fant-scoring-active" title="Goalie: −1 per goal against">G: GA −1</span>
+                    <span className="fant-scoring-unavail" title="Per-game data not available from QMJHL API">PPG/PPA/SHG N/A</span>
                   </div>
                 </div>
                 <button
