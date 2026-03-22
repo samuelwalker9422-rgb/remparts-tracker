@@ -83,7 +83,7 @@ function CreateModal({ user, onClose, onCreated }) {
             <div className="auth-field">
               <label>Number of Teams</label>
               <div style={{ display: 'flex', gap: '0.5rem', marginTop: '0.25rem' }}>
-                {[6, 8, 10, 12].map(n => (
+                {[2, 6, 8, 10, 12].map(n => (
                   <button
                     key={n}
                     type="button"

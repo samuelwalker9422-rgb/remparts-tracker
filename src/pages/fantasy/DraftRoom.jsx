@@ -89,13 +89,28 @@ function PreDraftLobby({ league, teams, user, leagueCtx, onStarted }) {
 
       {isCommish ? (
         <>
+          {teams.length < league.num_teams && (
+            <p style={{ fontSize: '0.8rem', color: 'gold', background: 'rgba(255,215,0,0.08)', border: '1px solid rgba(255,215,0,0.25)', borderRadius: 7, padding: '0.5rem 0.75rem', marginBottom: '0.75rem' }}>
+              {teams.length} of {league.num_teams} spots filled — you can start early with {teams.length} team{teams.length !== 1 ? 's' : ''}.
+            </p>
+          )}
           <p style={{ fontSize: '0.8rem', color: 'var(--muted)', marginBottom: '1rem' }}>
-            When everyone has joined, click Start Draft. Draft order will be randomised automatically.
+            Draft order will be randomised automatically.
           </p>
           {err && <div className="auth-error" style={{ marginBottom: '1rem' }}>{err}</div>}
-          <button className="auth-submit" style={{ maxWidth: 260, margin: '0 auto' }} disabled={starting} onClick={startDraft}>
-            {starting ? 'Starting…' : 'Start Draft'}
+          <button
+            className="auth-submit"
+            style={{ maxWidth: 300, margin: '0 auto' }}
+            disabled={starting || teams.length < 2}
+            onClick={startDraft}
+          >
+            {starting ? 'Starting…' : teams.length < league.num_teams
+              ? `Start with ${teams.length} of ${league.num_teams} teams`
+              : 'Start Draft'}
           </button>
+          {teams.length < 2 && (
+            <p style={{ fontSize: '0.75rem', color: 'var(--red)', marginTop: '0.5rem' }}>Need at least 2 teams to start.</p>
+          )}
         </>
       ) : (
         <p style={{ color: 'var(--muted)', fontSize: '0.85rem' }}>
