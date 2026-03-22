@@ -325,6 +325,7 @@ export default function Dashboard({ onNav, teamData }) {
     const t = setTimeout(() => {
       refreshStandings();
       refreshLeaders();
+      refreshSchedule();
     }, 5_000);
     return () => clearTimeout(t);
   }, [lastFinishedAt]);
@@ -336,7 +337,7 @@ export default function Dashboard({ onNav, teamData }) {
   }, [games]);
 
   // Live Remparts schedule from /api/games — falls back to data.js while loading
-  const { schedule: liveSchedule, playoffGames: livePlayoffGames } = useRempartsSchedule();
+  const { schedule: liveSchedule, playoffGames: livePlayoffGames, refresh: refreshSchedule } = useRempartsSchedule();
   const activeSchedule = liveSchedule.length > 0 ? liveSchedule : schedule;
 
   const completed = activeSchedule.filter(g => g.result !== 'upcoming');

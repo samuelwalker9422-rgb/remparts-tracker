@@ -1,10 +1,13 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 
 export function useRempartsSchedule() {
-  const [schedule,      setSchedule]      = useState([]);
-  const [playoffGames,  setPlayoffGames]  = useState([]);
-  const [loading,       setLoading]       = useState(true);
-  const [error,         setError]         = useState(null);
+  const [schedule,     setSchedule]     = useState([]);
+  const [playoffGames, setPlayoffGames] = useState([]);
+  const [loading,      setLoading]      = useState(true);
+  const [error,        setError]        = useState(null);
+  const [fetchKey,     setFetchKey]     = useState(0);
+
+  const refresh = useCallback(() => setFetchKey(k => k + 1), []);
 
   useEffect(() => {
     let cancelled = false;
@@ -28,7 +31,7 @@ export function useRempartsSchedule() {
 
     load();
     return () => { cancelled = true; };
-  }, []);
+  }, [fetchKey]);
 
-  return { schedule, playoffGames, loading, error };
+  return { schedule, playoffGames, loading, error, refresh };
 }
