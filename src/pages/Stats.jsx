@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useStandings } from '../hooks/useStandings';
 import PlayerProfile from './PlayerProfile';
 
 const SKATER_COLS = [
@@ -57,13 +58,24 @@ export default function Stats({ teamData }) {
   const playoffSort = useSortable('pts');
   const goalieSort = useSortable('svPct');
 
+  // Live standings for Remparts team record
+  const { east } = useStandings();
+  const rem = east.find(t => t.code === 'Que');
+  const liveGP  = rem ? rem.gp  : team.record.w + team.record.l + team.record.otl + (team.record.sol || 0);
+  const liveW   = rem ? rem.w   : team.record.w;
+  const liveL   = rem ? rem.l   : team.record.l;
+  const liveOTL = rem ? rem.otl : team.record.otl;
+  const livePts = rem ? rem.pts : team.points;
+  const liveGF  = rem ? rem.gf  : team.goalsFor;
+  const liveGA  = rem ? rem.ga  : team.goalsAgainst;
+  const liveDiff = liveGF - liveGA;
+  const winPct  = liveGP > 0 ? ((liveW / liveGP) * 100).toFixed(1) : '0.0';
+
   if (selectedNum !== null) {
     return <PlayerProfile num={selectedNum} onBack={() => setSelectedNum(null)} teamData={teamData} />;
   }
 
   // ─── Regular season stats ────────────────────────────────────────────────
-  const gp          = team.record.w + team.record.l + team.record.otl + (team.record.sol || 0);
-  const winPct      = gp > 0 ? ((team.record.w / gp) * 100).toFixed(1) : '0.0';
   const totalGoals  = skaters.reduce((s, p) => s + p.g, 0);
   const totalAsst   = skaters.reduce((s, p) => s + p.a, 0);
   const totalPts    = skaters.reduce((s, p) => s + p.pts, 0);
@@ -136,18 +148,18 @@ export default function Stats({ teamData }) {
           <div className="stat-grid stat-grid-4 section-gap">
             <div className="stat-card">
               <div className="stat-label">Record</div>
-              <div className="stat-val" style={{ fontSize: '1.5rem' }}>{team.record.w}-{team.record.l}-{team.record.otl}-{team.record.sol || 0}</div>
-              <div className="stat-sub">W–L–OTL–SOL</div>
+              <div className="stat-val" style={{ fontSize: '1.5rem' }}>{liveW}-{liveL}-{liveOTL}</div>
+              <div className="stat-sub">W–L–OTL · {liveGP} GP</div>
             </div>
             <div className="stat-card">
               <div className="stat-label">Points</div>
-              <div className="stat-val red">{team.points}</div>
+              <div className="stat-val red">{livePts}</div>
               <div className="stat-sub">Win%: {winPct}%</div>
             </div>
             <div className="stat-card">
               <div className="stat-label">Goals For / Against</div>
-              <div className="stat-val" style={{ fontSize: '1.4rem' }}>{team.goalsFor} / {team.goalsAgainst}</div>
-              <div className="stat-sub" style={{ color: 'var(--green)' }}>Diff: +{team.goalsFor - team.goalsAgainst}</div>
+              <div className="stat-val" style={{ fontSize: '1.4rem' }}>{liveGF} / {liveGA}</div>
+              <div className="stat-sub" style={{ color: liveDiff >= 0 ? 'var(--green)' : 'var(--red)' }}>Diff: {liveDiff >= 0 ? '+' : ''}{liveDiff}</div>
             </div>
             <div className="stat-card">
               <div className="stat-label">Skater Points</div>

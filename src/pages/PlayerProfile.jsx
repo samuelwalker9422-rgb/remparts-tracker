@@ -169,7 +169,7 @@ export default function PlayerProfile({ num, onBack, teamData }) {
           <div className="espn-header">
             <div className="espn-header-bar" />
             <h2>Game Log</h2>
-            <span className="subtitle">{games.length} games</span>
+            <span className="subtitle">{player.gp} GP this season · {games.length} games logged (Feb–Mar)</span>
           </div>
           <div className="table-wrap">
             <table>
