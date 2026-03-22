@@ -449,7 +449,7 @@ export default function LeagueHub({ onEnterLeague, onTonightPickup, onStandings 
                     <button
                       className="auth-submit"
                       style={{ flex: 1, padding: '0.5rem', fontSize: '0.82rem' }}
-                      onClick={() => onEnterLeague?.({ leagueId: lg.id, leagueTeamId: row.id, leagueName: lg.name, leagueStatus: lg.status, leagueSeason: lg.season, teamName: row.team_name })}
+                      onClick={e => { e.stopPropagation(); onEnterLeague?.({ leagueId: lg.id, leagueTeamId: row.id, leagueName: lg.name, leagueStatus: lg.status, leagueSeason: lg.season, teamName: row.team_name }); }}
                     >
                       Enter League →
                     </button>
@@ -460,9 +460,9 @@ export default function LeagueHub({ onEnterLeague, onTonightPickup, onStandings 
                           background: 'rgba(255,215,0,0.12)', border: '1px solid rgba(255,215,0,0.3)',
                           color: 'gold', borderRadius: 7, cursor: 'pointer', fontWeight: 700, flexShrink: 0,
                         }}
-                        onClick={() => onStandings?.({ leagueId: lg.id, leagueTeamId: row.id, leagueName: lg.name, leagueStatus: lg.status, leagueSeason: lg.season, teamName: row.team_name })}
+                        onClick={e => { e.stopPropagation(); onStandings?.({ leagueId: lg.id, leagueTeamId: row.id, leagueName: lg.name, leagueStatus: lg.status, leagueSeason: lg.season, teamName: row.team_name }); }}
                       >
-                        📊 Standings
+                        📊 League Scores
                       </button>
                     )}
                   </div>
