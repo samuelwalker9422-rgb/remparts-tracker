@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { usePlayoffSchedule } from '../hooks/usePlayoffSchedule';
 
 // ── Layout constants ─────────────────────────────────────────────────────────
 const H   = 480;
@@ -17,25 +18,25 @@ const L    = id => `https://assets.leaguestat.com/lhjmq/logos/${id}`;
 
 // ── Teams ────────────────────────────────────────────────────────────────────
 const EAST = [
-  { seed:1, name:'Moncton Wildcats',        short:'Moncton',       logo:L('1.png')           },
-  { seed:2, name:'Chicoutimi Saguenéens',   short:'Chicoutimi',    logo:L('10.png')          },
-  { seed:3, name:'Newfoundland Regiment',   short:'Newfoundland',  logo:L('2_211.png')       },
-  { seed:4, name:'Charlottetown Islanders', short:'Charlottetown', logo:L('7.png')           },
-  { seed:5, name:'Québec Remparts',         short:'Québec',        logo:L('9.png')           },
-  { seed:6, name:'Cape Breton Eagles',      short:'Cape Breton',   logo:L('3.jpg')           },
-  { seed:7, name:'Halifax Mooseheads',      short:'Halifax',       logo:L('5_211.png')       },
-  { seed:8, name:'Saint John Sea Dogs',     short:'Saint John',    logo:L('50x50/8_211.png') },
+  { seed:1, code:'Mon', name:'Moncton Wildcats',        short:'Moncton',       logo:L('1.png')           },
+  { seed:2, code:'Chi', name:'Chicoutimi Saguenéens',   short:'Chicoutimi',    logo:L('10.png')          },
+  { seed:3, code:'NFL', name:'Newfoundland Regiment',   short:'Newfoundland',  logo:L('2_211.png')       },
+  { seed:4, code:'Cha', name:'Charlottetown Islanders', short:'Charlottetown', logo:L('7.png')           },
+  { seed:5, code:'Que', name:'Québec Remparts',         short:'Québec',        logo:L('9.png')           },
+  { seed:6, code:'Cap', name:'Cape Breton Eagles',      short:'Cape Breton',   logo:L('3.jpg')           },
+  { seed:7, code:'Hal', name:'Halifax Mooseheads',      short:'Halifax',       logo:L('5_211.png')       },
+  { seed:8, code:'SNB', name:'Saint John Sea Dogs',     short:'Saint John',    logo:L('50x50/8_211.png') },
 ];
 
 const WEST = [
-  { seed:1, name:'Drummondville Voltigeurs', short:'Drummondville', logo:L('50x50/14.png') },
-  { seed:2, name:'Rouyn-Noranda Huskies',   short:'Rouyn-Noranda', logo:L('50x50/11.png') },
-  { seed:3, name:'Blainville-BB Armada',    short:'Blainville',    logo:L('19.png')        },
-  { seed:4, name:'Shawinigan Cataractes',   short:'Shawinigan',    logo:L('13.png')        },
-  { seed:5, name:'Sherbrooke Phoenix',      short:'Sherbrooke',    logo:L('50x50/60.png')  },
-  { seed:6, name:"Val-d'Or Foreurs",        short:"Val-d'Or",      logo:L('15.png')        },
-  { seed:7, name:'Victoriaville Tigres',    short:'Victoriaville', logo:L('17.png')        },
-  { seed:8, name:'Gatineau Olympiques',     short:'Gatineau',      logo:L('50x50/12.png')  },
+  { seed:1, code:'Rou', name:'Rouyn-Noranda Huskies',        short:'Rouyn-Noranda', logo:L('50x50/11.png') },
+  { seed:2, code:'BLB', name:'Blainville-Boisbriand Armada', short:'Blainville',    logo:L('19.png')        },
+  { seed:3, code:'Dru', name:'Drummondville Voltigeurs',      short:'Drummondville', logo:L('50x50/14.png') },
+  { seed:4, code:'Sha', name:'Shawinigan Cataractes',         short:'Shawinigan',    logo:L('13.png')        },
+  { seed:5, code:'She', name:'Sherbrooke Phoenix',            short:'Sherbrooke',    logo:L('50x50/60.png')  },
+  { seed:6, code:'VdO', name:"Val-d'Or Foreurs",              short:"Val-d'Or",      logo:L('15.png')        },
+  { seed:7, code:'Vic', name:'Victoriaville Tigres',          short:'Victoriaville', logo:L('17.png')        },
+  { seed:8, code:'Gat', name:'Gatineau Olympiques',           short:'Gatineau',      logo:L('50x50/12.png')  },
 ];
 
 // ── Series helpers ────────────────────────────────────────────────────────────
@@ -366,8 +367,90 @@ function FinalCol({ matchup, series, onOpenModal }) {
   );
 }
 
+// ── Schedule helpers ──────────────────────────────────────────────────────────
+const TZ_LABEL = { 'America/Toronto': 'ET', 'America/Halifax': 'AT', 'America/St_Johns': 'NT' };
+
+const MONTH_ABR = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+const DAY_ABR   = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+
+function fmtDate(dateStr) {
+  const d = new Date(dateStr + 'T12:00:00');
+  return `${DAY_ABR[d.getDay()]} ${MONTH_ABR[d.getMonth()]} ${d.getDate()}`;
+}
+
+function fmtTime(time, tz) {
+  if (!time) return '';
+  let [h, m] = time.split(':').map(Number);
+  if (tz === 'America/St_Johns') {
+    const t = h * 60 + m - 30;
+    h = Math.floor(t / 60) % 24;
+    m = t % 60;
+  }
+  const ampm = h >= 12 ? 'PM' : 'AM';
+  const h12  = h === 0 ? 12 : h > 12 ? h - 12 : h;
+  const mins = m === 0 ? '' : `:${String(m).padStart(2, '0')}`;
+  return `${h12}${mins} ${ampm} ${TZ_LABEL[tz] ?? ''}`;
+}
+
+// ── Series schedule card ──────────────────────────────────────────────────────
+function SeriesSchedule({ top, bot, allGames }) {
+  if (!top?.code || !bot?.code) return null;
+
+  const games = allGames
+    .filter(g =>
+      (g.homeCode === top.code && g.awayCode === bot.code) ||
+      (g.homeCode === bot.code && g.awayCode === top.code)
+    )
+    .sort((a, b) => a.date.localeCompare(b.date) || a.time?.localeCompare(b.time ?? ''));
+
+  const isQC = top.code === 'Que' || bot.code === 'Que';
+
+  return (
+    <div className={`po-sched-card${isQC ? ' po-sched-qc' : ''}`}>
+      <div className="po-sched-header">
+        <span className="po-sched-seed">{top.seed}</span>
+        {top.logo && <img src={top.logo} alt="" className="po-sched-logo" onError={e => e.target.style.display='none'}/>}
+        <span className="po-sched-name">{top.short}</span>
+        <span className="po-sched-vs">vs</span>
+        <span className="po-sched-name po-sched-right">{bot.short}</span>
+        {bot.logo && <img src={bot.logo} alt="" className="po-sched-logo" onError={e => e.target.style.display='none'}/>}
+        <span className="po-sched-seed">{bot.seed}</span>
+      </div>
+
+      <div className="po-sched-games">
+        {games.map((g, i) => {
+          const homeIsTop = g.homeCode === top.code;
+          const topGoals  = g.final ? (homeIsTop ? g.homeGoals : g.awayGoals) : null;
+          const botGoals  = g.final ? (homeIsTop ? g.awayGoals : g.homeGoals) : null;
+          const topWon    = g.final && topGoals > botGoals;
+          const botWon    = g.final && botGoals > topGoals;
+
+          return (
+            <div key={g.gameId} className={`po-game-row${g.final ? ' po-game-final' : ''}`}>
+              <span className="po-game-num">G{i + 1}</span>
+              <span className="po-game-date">{fmtDate(g.date)}</span>
+              <span className="po-game-time">{fmtTime(g.time, g.tz)}</span>
+              <span className="po-game-venue">{g.venue}</span>
+              {g.final ? (
+                <span className="po-game-score">
+                  <span className={topWon ? 'po-score-win' : ''}>{topGoals}</span>
+                  <span className="po-score-dash">–</span>
+                  <span className={botWon ? 'po-score-win' : ''}>{botGoals}</span>
+                </span>
+              ) : (
+                <span className="po-game-upcoming">Upcoming</span>
+              )}
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
 // ── Main ──────────────────────────────────────────────────────────────────────
 export default function Playoffs() {
+  const { games: playoffGames } = usePlayoffSchedule();
   const [series, setSeries] = useState(() => {
     try {
       const saved = localStorage.getItem('qmjhl-series-2026');
@@ -448,8 +531,7 @@ export default function Playoffs() {
       </div>
 
       <p style={{ fontSize:'0.75rem', color:'var(--muted)', marginBottom:'1rem' }}>
-        Standings as of March 18, 2026 —&nbsp;
-        <strong style={{ color:'var(--text)' }}>2 games remaining</strong>.
+        Final standings — regular season complete.
         Click any matchup to enter game-by-game scores — results save automatically.
       </p>
 
@@ -481,6 +563,30 @@ export default function Playoffs() {
         <span><span className="bk-legend-dot" style={{background:'var(--red)'}}/>Québec Remparts — your team</span>
         <span><span className="bk-legend-dot" style={{background:'var(--green)'}}/>Series winner — auto-advances</span>
         <span style={{color:'var(--muted)',fontStyle:'italic'}}>Click any matchup to enter game scores</span>
+      </div>
+
+      {/* ── Round 1 Game Schedules ── */}
+      <div className="espn-header" style={{ marginTop: '2rem' }}>
+        <div className="espn-header-bar" />
+        <h2>Round 1 Schedules</h2>
+        <span className="subtitle">All games · Best of 7</span>
+      </div>
+
+      <div className="po-sched-section">
+        <div className="po-sched-col">
+          <div className="po-sched-conf-label">Eastern Conference</div>
+          <SeriesSchedule top={EAST[0]} bot={EAST[7]} allGames={playoffGames} />
+          <SeriesSchedule top={EAST[3]} bot={EAST[4]} allGames={playoffGames} />
+          <SeriesSchedule top={EAST[1]} bot={EAST[6]} allGames={playoffGames} />
+          <SeriesSchedule top={EAST[2]} bot={EAST[5]} allGames={playoffGames} />
+        </div>
+        <div className="po-sched-col">
+          <div className="po-sched-conf-label">Western Conference</div>
+          <SeriesSchedule top={WEST[0]} bot={WEST[7]} allGames={playoffGames} />
+          <SeriesSchedule top={WEST[3]} bot={WEST[4]} allGames={playoffGames} />
+          <SeriesSchedule top={WEST[1]} bot={WEST[6]} allGames={playoffGames} />
+          <SeriesSchedule top={WEST[2]} bot={WEST[5]} allGames={playoffGames} />
+        </div>
       </div>
 
       {/* Score entry modal */}

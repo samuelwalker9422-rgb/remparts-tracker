@@ -1,16 +1,57 @@
+import { useStandings }        from '../hooks/useStandings';
+import { useRempartsSchedule } from '../hooks/useRempartsSchedule';
+
 export default function Standings({ teamData }) {
-  const { team, schedule } = teamData;
-  const completed   = schedule.filter(g => g.result !== 'upcoming');
-  const gamesPlayed = team.record.w + team.record.l + team.record.otl + (team.record.sol || 0);
-  const winPct      = gamesPlayed > 0 ? ((team.record.w / gamesPlayed) * 100).toFixed(1) : '0.0';
-  const ptsPct      = gamesPlayed > 0 ? ((team.points / (gamesPlayed * 2)) * 100).toFixed(1) : '0.0';
-  const diff        = team.goalsFor - team.goalsAgainst;
-  const last5       = [...completed].slice(-5);
-  const last10      = [...completed].slice(-10);
-  const l10w        = last10.filter(g => g.result === 'W').length;
-  const l10l        = last10.filter(g => g.result === 'L').length;
-  const l10o        = last10.filter(g => g.result === 'OTL').length;
-  const league      = team.name === 'Bearcats' ? 'MHL' : 'LHJMQ';
+  const { team } = teamData;
+  const { east, loading: standingsLoading } = useStandings();
+  const { schedule: liveGames }             = useRempartsSchedule();
+
+  const league = team.name === 'Bearcats' ? 'MHL' : 'LHJMQ';
+
+  // ── Live standings row for the Remparts ──────────────────────────────────
+  const rem = east.find(t => t.code === 'Que') ?? null;
+  const gp  = rem?.gp  ?? 0;
+  const w   = rem?.w   ?? 0;
+  const l   = rem?.l   ?? 0;
+  const otl = rem?.otl ?? 0;
+  const pts = rem?.pts ?? 0;
+  const gf  = rem?.gf  ?? 0;
+  const ga  = rem?.ga  ?? 0;
+  const diff    = gf - ga;
+  const winPct  = gp > 0 ? ((w / gp) * 100).toFixed(1) : '0.0';
+  const ptsPct  = gp > 0 ? ((pts / (gp * 2)) * 100).toFixed(1) : '0.0';
+
+  // ── Derived splits from live schedule ────────────────────────────────────
+  const completed = liveGames.filter(g => g.result !== 'upcoming');
+  const last5     = [...completed].slice(-5);
+  const last10    = [...completed].slice(-10);
+  const l10w      = last10.filter(g => g.result === 'W').length;
+  const l10l      = last10.filter(g => g.result === 'L').length;
+  const l10o      = last10.filter(g => g.result === 'OTL').length;
+
+  // Home / Away
+  const homeGames = completed.filter(g => g.home);
+  const awayGames = completed.filter(g => !g.home);
+  const homeRec = {
+    w:   homeGames.filter(g => g.result === 'W').length,
+    l:   homeGames.filter(g => g.result === 'L').length,
+    otl: homeGames.filter(g => g.result === 'OTL').length,
+  };
+  const awayRec = {
+    w:   awayGames.filter(g => g.result === 'W').length,
+    l:   awayGames.filter(g => g.result === 'L').length,
+    otl: awayGames.filter(g => g.result === 'OTL').length,
+  };
+
+  // Streak
+  let streak = '—';
+  if (completed.length > 0) {
+    const rev  = [...completed].reverse();
+    const type = rev[0].result;
+    let   cnt  = 0;
+    for (const g of rev) { if (g.result === type) cnt++; else break; }
+    streak = `${type}${cnt}`;
+  }
 
   return (
     <div className="page">
@@ -49,18 +90,19 @@ export default function Standings({ teamData }) {
                 </span>
                 {team.fullName}
               </td>
-              <td>{gamesPlayed}</td>
-              <td style={{ color: 'var(--green)', fontWeight: 700 }}>{team.record.w}</td>
-              <td style={{ color: 'var(--red)' }}>{team.record.l}</td>
-              <td style={{ color: 'var(--orange)' }}>{team.record.otl}</td>
-              <td style={{ color: 'var(--muted)' }}>{team.record.sol || 0}</td>
-              <td className="pts-cell" style={{ fontSize: '1rem' }}>{team.points}</td>
-              <td style={{ color: 'var(--muted)' }}>{ptsPct}%</td>
-              <td>{team.goalsFor}</td>
-              <td>{team.goalsAgainst}</td>
-              <td style={{ color: diff >= 0 ? 'var(--green)' : 'var(--red)', fontWeight: 700 }}>{diff >= 0 ? '+' : ''}{diff}</td>
+              <td>{standingsLoading ? '…' : gp}</td>
+              <td style={{ color: 'var(--green)', fontWeight: 700 }}>{standingsLoading ? '…' : w}</td>
+              <td style={{ color: 'var(--red)' }}>{standingsLoading ? '…' : l}</td>
+              <td style={{ color: 'var(--orange)' }}>{standingsLoading ? '…' : otl}</td>
+              <td className="pts-cell" style={{ fontSize: '1rem' }}>{standingsLoading ? '…' : pts}</td>
+              <td style={{ color: 'var(--muted)' }}>{standingsLoading ? '…' : `${ptsPct}%`}</td>
+              <td>{standingsLoading ? '…' : gf}</td>
+              <td>{standingsLoading ? '…' : ga}</td>
+              <td style={{ color: diff >= 0 ? 'var(--green)' : 'var(--red)', fontWeight: 700 }}>
+                {standingsLoading ? '…' : `${diff >= 0 ? '+' : ''}${diff}`}
+              </td>
               <td style={{ color: 'var(--muted)' }}>{l10w}-{l10l}-{l10o}</td>
-              <td><span className={`badge badge-${team.streak?.slice(-1)}`}>{team.streak}</span></td>
+              <td><span className={`badge badge-${streak.charAt(0)}`}>{streak}</span></td>
             </tr>
           </tbody>
         </table>
@@ -69,23 +111,30 @@ export default function Standings({ teamData }) {
       <div className="stat-grid stat-grid-4 section-gap">
         <div className="stat-card" style={{ textAlign: 'center' }}>
           <div className="stat-label">Record</div>
-          <div className="stat-val" style={{ fontSize: '1.4rem' }}>{team.record.w}-{team.record.l}-{team.record.otl}-{team.record.sol || 0}</div>
-          <div className="stat-sub">W · L · OTL · SOL</div>
+          <div className="stat-val" style={{ fontSize: '1.4rem' }}>
+            {standingsLoading ? '…' : `${w}-${l}-${otl}`}
+          </div>
+          <div className="stat-sub">W · L · OTL</div>
         </div>
         <div className="stat-card" style={{ textAlign: 'center' }}>
           <div className="stat-label">Points</div>
-          <div className="stat-val red">{team.points}</div>
-          <div className="stat-sub">{ptsPct}% points rate</div>
+          <div className="stat-val red">{standingsLoading ? '…' : pts}</div>
+          <div className="stat-sub">{standingsLoading ? '' : `${ptsPct}% points rate`}</div>
         </div>
         <div className="stat-card" style={{ textAlign: 'center' }}>
           <div className="stat-label">Goal Differential</div>
-          <div className="stat-val" style={{ color: diff >= 0 ? 'var(--green)' : 'var(--red)' }}>{diff >= 0 ? '+' : ''}{diff}</div>
-          <div className="stat-sub">{team.goalsFor} GF · {team.goalsAgainst} GA</div>
+          <div className="stat-val" style={{ color: diff >= 0 ? 'var(--green)' : 'var(--red)' }}>
+            {standingsLoading ? '…' : `${diff >= 0 ? '+' : ''}${diff}`}
+          </div>
+          <div className="stat-sub">{standingsLoading ? '' : `${gf} GF · ${ga} GA`}</div>
         </div>
         <div className="stat-card" style={{ textAlign: 'center' }}>
           <div className="stat-label">Win Percentage</div>
-          <div className="stat-val">{winPct}<span style={{ fontSize: '1rem', color: 'var(--muted)' }}>%</span></div>
-          <div className="stat-sub">{gamesPlayed} games played</div>
+          <div className="stat-val">
+            {standingsLoading ? '…' : winPct}
+            {!standingsLoading && <span style={{ fontSize: '1rem', color: 'var(--muted)' }}>%</span>}
+          </div>
+          <div className="stat-sub">{standingsLoading ? '' : `${gp} games played`}</div>
         </div>
       </div>
 
@@ -97,19 +146,19 @@ export default function Standings({ teamData }) {
         <div className="card">
           <h2>Home Record</h2>
           <div style={{ fontSize: '2.5rem', fontWeight: 900, textAlign: 'center', color: 'var(--green)' }}>
-            {team.home.w}-{team.home.l}-{team.home.otl}-{team.home.sol || 0}
+            {homeRec.w}-{homeRec.l}-{homeRec.otl}
           </div>
           <div style={{ textAlign: 'center', color: 'var(--muted)', fontSize: '0.8rem', marginTop: '0.5rem' }}>
-            {team.home.w + team.home.l + team.home.otl + (team.home.sol || 0)} home games
+            {homeRec.w + homeRec.l + homeRec.otl} home games
           </div>
         </div>
         <div className="card">
           <h2>Away Record</h2>
           <div style={{ fontSize: '2.5rem', fontWeight: 900, textAlign: 'center', color: 'var(--red)' }}>
-            {team.away.w}-{team.away.l}-{team.away.otl}{(team.away.sol || 0) > 0 ? `-${team.away.sol}` : ''}
+            {awayRec.w}-{awayRec.l}-{awayRec.otl}
           </div>
           <div style={{ textAlign: 'center', color: 'var(--muted)', fontSize: '0.8rem', marginTop: '0.5rem' }}>
-            {team.away.w + team.away.l + team.away.otl + (team.away.sol || 0)} away games
+            {awayRec.w + awayRec.l + awayRec.otl} away games
           </div>
         </div>
       </div>
@@ -121,8 +170,8 @@ export default function Standings({ teamData }) {
       </div>
       <div className="card">
         <div className="form-row">
-          {last5.map(g => (
-            <div className="form-item" key={g.id}>
+          {last5.map((g, i) => (
+            <div className="form-item" key={g.gameId ?? i}>
               <span className={`badge badge-${g.result}`}>{g.result}</span>
               <small>{g.gf}–{g.ga}</small>
             </div>

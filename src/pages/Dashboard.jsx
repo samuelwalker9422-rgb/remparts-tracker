@@ -376,6 +376,22 @@ export default function Dashboard({ onNav, teamData }) {
   const ga   = rem ? rem.ga  : team.goalsAgainst;
   const diff = gf - ga;
 
+  // Live streak from completed games
+  let liveStreak = '—';
+  if (completed.length > 0) {
+    const rev  = [...completed].reverse();
+    const type = rev[0].result;
+    let cnt = 0;
+    for (const g of rev) { if (g.result === type) cnt++; else break; }
+    liveStreak = `${type}${cnt}`;
+  }
+
+  // Live seed from standings position in east array
+  const remIdx   = liveEast.findIndex(t => t.code === 'Que');
+  const liveSeed = remIdx >= 0 ? remIdx + 1 : null;
+  const seedSfx  = liveSeed === 1 ? 'st' : liveSeed === 2 ? 'nd' : liveSeed === 3 ? 'rd' : 'th';
+  const seedLabel = liveSeed ? `${liveSeed}${seedSfx} East` : '— East';
+
   return (
     <div className="page">
 
@@ -410,9 +426,9 @@ export default function Dashboard({ onNav, teamData }) {
                 <span style={{ color: diff >= 0 ? 'var(--green)' : 'var(--red)' }}>({diff >= 0 ? '+' : ''}{diff})</span>
               </div>
               <div style={{ marginTop: '0.5rem', display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
-                <span className={`badge badge-${team.streak?.slice(-1)}`}>{team.streak}</span>
+                <span className={`badge badge-${liveStreak.charAt(0)}`}>{liveStreak}</span>
                 <span style={{ fontSize: '0.75rem', color: 'var(--muted)' }}>Current streak</span>
-                <span className="db-seed-badge">🏒 5th East</span>
+                <span className="db-seed-badge">🏒 {seedLabel}</span>
               </div>
             </div>
             <div className="hero-badge">
