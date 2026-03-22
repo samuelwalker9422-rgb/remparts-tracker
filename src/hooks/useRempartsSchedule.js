@@ -1,9 +1,10 @@
 import { useState, useEffect } from 'react';
 
 export function useRempartsSchedule() {
-  const [schedule, setSchedule] = useState([]);
-  const [loading,  setLoading]  = useState(true);
-  const [error,    setError]    = useState(null);
+  const [schedule,      setSchedule]      = useState([]);
+  const [playoffGames,  setPlayoffGames]  = useState([]);
+  const [loading,       setLoading]       = useState(true);
+  const [error,         setError]         = useState(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -15,6 +16,7 @@ export function useRempartsSchedule() {
         const json = await res.json();
         if (!cancelled) {
           setSchedule(json.games ?? []);
+          setPlayoffGames(json.playoffGames ?? []);
           setError(null);
         }
       } catch (e) {
@@ -28,5 +30,5 @@ export function useRempartsSchedule() {
     return () => { cancelled = true; };
   }, []);
 
-  return { schedule, loading, error };
+  return { schedule, playoffGames, loading, error };
 }

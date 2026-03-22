@@ -48,6 +48,18 @@ const TZ_LABEL = {
   'Canada/Newfoundland': 'NT',
 };
 
+// ── Game-time formatter for /api/games schedule entries (IANA timezone keys) ─
+const SCHED_TZ_LABEL = { 'America/Toronto': 'ET', 'America/Halifax': 'AT', 'America/St_Johns': 'NT' };
+function fmtSchedTime(time, tz) {
+  if (!time || !tz) return null;
+  let [h, m] = time.split(':').map(Number);
+  if (tz === 'America/St_Johns') { const t = h * 60 + m - 30; h = Math.floor(t / 60) % 24; m = t % 60; }
+  const ampm = h >= 12 ? 'PM' : 'AM';
+  const h12  = h === 0 ? 12 : h > 12 ? h - 12 : h;
+  const mins = m === 0 ? '' : `:${String(m).padStart(2, '0')}`;
+  return `${h12}${mins} ${ampm} ${SCHED_TZ_LABEL[tz] ?? tz}`;
+}
+
 // ── Short name map ────────────────────────────────────────────────────────────
 // API uses "City, Nickname" format
 const SHORT = {
@@ -324,12 +336,16 @@ export default function Dashboard({ onNav, teamData }) {
   }, [games]);
 
   // Live Remparts schedule from /api/games — falls back to data.js while loading
-  const { schedule: liveSchedule } = useRempartsSchedule();
+  const { schedule: liveSchedule, playoffGames: livePlayoffGames } = useRempartsSchedule();
   const activeSchedule = liveSchedule.length > 0 ? liveSchedule : schedule;
 
   const completed = activeSchedule.filter(g => g.result !== 'upcoming');
   const upcoming  = activeSchedule.filter(g => g.result === 'upcoming');
-  const nextGame  = upcoming[0];
+
+  // Next game: check playoff upcoming first, then regular season
+  const nextPlayoffGame = livePlayoffGames.find(g => g.result === 'upcoming') ?? null;
+  const nextGame        = nextPlayoffGame ?? upcoming[0] ?? null;
+  const nextIsPlayoff   = nextGame !== null && nextGame === nextPlayoffGame;
   const recent    = [...completed].slice(-5).reverse();
   const last5     = [...completed].slice(-5);
 
@@ -490,19 +506,26 @@ export default function Dashboard({ onNav, teamData }) {
 
             <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
               {nextGame ? (
-                <div className="card" style={{ borderLeft: '4px solid var(--green)' }}>
+                <div className="card" style={{ borderLeft: `4px solid ${nextIsPlayoff ? 'gold' : 'var(--green)'}` }}>
                   <h2>Next Game</h2>
+                  {nextIsPlayoff && (
+                    <div style={{ fontSize: '0.65rem', fontWeight: 800, color: 'gold', letterSpacing: '0.06em', marginBottom: '4px' }}>
+                      🏆 GAME {nextGame.gameNum} · PLAYOFFS
+                    </div>
+                  )}
                   <div className="next-opp">{nextGame.home ? 'vs' : '@'} {nextGame.opponent}</div>
                   <div className="next-details">
                     {fmt(nextGame.date)}&nbsp;·&nbsp;
+                    {fmtSchedTime(nextGame.time, nextGame.tz) && (
+                      <>{fmtSchedTime(nextGame.time, nextGame.tz)}&nbsp;·&nbsp;</>
+                    )}
                     <span className="badge badge-loc">{nextGame.home ? 'Home' : 'Away'}</span>
                   </div>
                 </div>
               ) : (
-                <div className="card" style={{ borderLeft: '4px solid gold' }}>
+                <div className="card">
                   <h2>Next Game</h2>
-                  <div style={{ color: 'gold', fontWeight: 700, marginTop: '0.3rem' }}>🏆 Playoffs</div>
-                  <div style={{ fontSize: '0.8rem', color: 'var(--muted)', marginTop: '0.2rem' }}>5th seed · Eastern Conf</div>
+                  <div style={{ fontSize: '0.8rem', color: 'var(--muted)', marginTop: '0.3rem' }}>No upcoming games</div>
                 </div>
               )}
               <div className="card">
