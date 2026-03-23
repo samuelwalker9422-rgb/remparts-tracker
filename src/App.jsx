@@ -33,6 +33,7 @@ export default function App() {
   const [page, setPage]         = useState('Dashboard');
   const [gameDate, setGameDate] = useState(null);
   const [leagueCtx, setLeagueCtx] = useState(null);  // { leagueId, leagueTeamId, leagueName }
+  const [menuOpen, setMenuOpen] = useState(false);
   const [darkMode, setDarkMode] = useState(
     () => localStorage.getItem('theme') !== 'light'
   );
@@ -110,19 +111,28 @@ export default function App() {
   return (
     <>
       <nav className="espn-nav">
-        <div className="espn-logo" onClick={() => setPage('Dashboard')}>
+        <div className="espn-logo" onClick={() => { setPage('Dashboard'); setMenuOpen(false); }}>
           REMPARTS<span>Québec · LHJMQ</span>
         </div>
-        {PAGES.map(p => (
-          <button
-            key={p.key}
-            className={`nav-btn${page === p.key ? ' active' : ''}`}
-            onClick={() => setPage(p.key)}
-          >
-            <span>{p.label}</span>
-          </button>
-        ))}
+        <div className="nav-links">
+          {PAGES.map(p => (
+            <button
+              key={p.key}
+              className={`nav-btn${page === p.key ? ' active' : ''}`}
+              onClick={() => setPage(p.key)}
+            >
+              <span>{p.label}</span>
+            </button>
+          ))}
+        </div>
         <div className="nav-spacer" />
+        <button
+          className="ham-btn"
+          onClick={() => setMenuOpen(m => !m)}
+          aria-label="Menu"
+        >
+          {menuOpen ? '✕' : '☰'}
+        </button>
         <button
           className="theme-toggle"
           onClick={() => setDarkMode(d => !d)}
@@ -131,6 +141,19 @@ export default function App() {
           {darkMode ? '☀️' : '🌙'}
         </button>
       </nav>
+      {menuOpen && (
+        <div className="mobile-nav-menu">
+          {PAGES.map(p => (
+            <button
+              key={p.key}
+              className={`mob-nav-item${page === p.key ? ' active' : ''}`}
+              onClick={() => { setPage(p.key); setMenuOpen(false); }}
+            >
+              {p.label}
+            </button>
+          ))}
+        </div>
+      )}
       {renderPage()}
     </>
   );

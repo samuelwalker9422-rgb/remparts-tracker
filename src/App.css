@@ -1982,6 +1982,57 @@ tr:hover td { background: #1e1e1e; }
 [data-theme="light"] .auth-modal       { background: var(--surface); }
 [data-theme="light"] .auth-field input { background: var(--surface2); color: var(--text); }
 
+/* ── HAMBURGER NAV ───────────────────────────────────── */
+.ham-btn {
+  display: none;
+  background: none;
+  border: none;
+  color: rgba(255,255,255,0.8);
+  font-size: 1.3rem;
+  cursor: pointer;
+  padding: 0.25rem 0.5rem;
+  line-height: 1;
+  flex-shrink: 0;
+  transition: color 0.15s;
+}
+.ham-btn:hover { color: #fff; }
+
+.nav-links {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+  flex-wrap: nowrap;
+}
+
+.mobile-nav-menu {
+  display: none;
+  position: sticky;
+  top: 52px;
+  z-index: 199;
+  background: var(--nav-bg);
+  border-bottom: 2px solid var(--red);
+  flex-direction: column;
+  padding: 0.25rem 0;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.4);
+}
+.mob-nav-item {
+  background: none;
+  border: none;
+  color: rgba(255,255,255,0.75);
+  font-size: 0.85rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  padding: 0.75rem 1.5rem;
+  text-align: left;
+  cursor: pointer;
+  font-family: inherit;
+  border-left: 3px solid transparent;
+  transition: all 0.15s;
+}
+.mob-nav-item:hover { color: #fff; background: rgba(255,255,255,0.05); }
+.mob-nav-item.active { color: #fff; border-left-color: var(--red); background: rgba(204,0,0,0.08); }
+
 /* ── RESPONSIVE ──────────────────────────────────────── */
 @media (max-width: 768px) {
   .stat-grid-4 { grid-template-columns: repeat(2, 1fr); }
@@ -2001,6 +2052,44 @@ tr:hover td { background: #1e1e1e; }
   .fant-grid { grid-template-columns: repeat(auto-fill, minmax(130px, 1fr)); }
   .fant-lock-btn { min-width: unset; width: 100%; }
   .fant-tabs { overflow-x: auto; }
+
+  /* Nav: hide desktop links, show hamburger */
+  .nav-links { display: none; }
+  .ham-btn   { display: flex; align-items: center; }
+  .mobile-nav-menu { display: flex; }
+
+  /* Dashboard */
+  .db-score-grid { grid-template-columns: repeat(2, 1fr); }
+  .db-main-grid  { grid-template-columns: 1fr; }
+
+  /* WaiverWire: single column */
+  .waiver-two-col { grid-template-columns: 1fr !important; }
+  .waiver-right-col {
+    position: static !important;
+    max-height: 75vh !important;
+  }
+
+  /* TradeCenter: roster pickers stack */
+  .trade-pickers-grid { grid-template-columns: 1fr !important; }
+
+  /* LeagueStandings H2H: stack vertically */
+  .h2h-scoreboard {
+    grid-template-columns: 1fr !important;
+    text-align: center;
+  }
+
+  /* CoachLines: tighter slots */
+  .page .slot-card-grid { gap: 0.3rem !important; }
+  .espn-nav { padding: 0 1rem; gap: 0.15rem; }
+  .espn-logo { margin-right: 0.5rem; font-size: 1.1rem; }
+
+  /* Standings table horizontal scroll */
+  .db-std-table { font-size: 0.72rem; }
+  .db-std-table th, .db-std-table td { padding: 0.2rem 0.25rem; }
+
+  /* Game rows wrap on small screens */
+  .game-row { flex-wrap: wrap; gap: 0.5rem; }
+  .game-opp  { min-width: 100%; order: -1; }
 }
 
 /* ── CLICKABLE GAME CARDS ─────────────────────────────────────────────────── */

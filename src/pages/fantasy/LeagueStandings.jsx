@@ -1,5 +1,11 @@
 import { useFantasyScoring } from '../../hooks/useFantasyScoring';
 
+function currentWeek() {
+  const start = new Date('2026-03-27T00:00:00');
+  const diff  = Date.now() - start.getTime();
+  return Math.max(1, Math.ceil(diff / (7 * 24 * 60 * 60 * 1000)));
+}
+
 function PosBadge({ pos }) {
   const colors = { F: '#cc6600', D: '#0077cc', G: '#7700cc' };
   return (
@@ -19,6 +25,114 @@ function fmtFpts(n) {
   return Number.isInteger(n) ? n : n.toFixed(1);
 }
 
+// ── Week recap ────────────────────────────────────────────────────────────────
+function WeekRecap({ teamScores, myTeamId }) {
+  const weekNum  = currentWeek();
+  const allPts   = teamScores.reduce((s, t) => s + t.totalPts, 0);
+  if (allPts === 0) return null;
+
+  const sorted     = [...teamScores].sort((a, b) => b.totalPts - a.totalPts);
+  const winner     = sorted[0];
+  const allPlayers = teamScores.flatMap(t =>
+    (t.playerBreakdown ?? []).map(p => ({ ...p, teamName: t.teamName }))
+  );
+  const topPlayers = [...allPlayers]
+    .filter(p => p.fpts > 0)
+    .sort((a, b) => b.fpts - a.fpts)
+    .slice(0, 5);
+
+  return (
+    <>
+      <div className="espn-header" style={{ marginTop: '1.5rem', marginBottom: '0.75rem' }}>
+        <div className="espn-header-bar" style={{ background: 'gold' }} />
+        <h2>Week {weekNum} Recap</h2>
+        <span className="subtitle">Cumulative playoff scores</span>
+      </div>
+
+      {/* Week leader banner */}
+      <div style={{
+        background: 'rgba(255,215,0,0.08)', border: '1px solid rgba(255,215,0,0.25)',
+        borderRadius: 8, padding: '0.75rem 1rem', marginBottom: '0.75rem',
+        display: 'flex', alignItems: 'center', gap: '0.5rem',
+      }}>
+        <span style={{ fontSize: '1.1rem' }}>👑</span>
+        <div>
+          <div style={{ fontSize: '0.62rem', fontWeight: 800, color: 'gold', letterSpacing: '0.06em', marginBottom: '0.1rem' }}>
+            WEEK {weekNum} LEADER
+          </div>
+          <div style={{ fontSize: '0.9rem', fontWeight: 800 }}>
+            {winner.teamName}
+            <span style={{ marginLeft: '0.5rem', color: 'gold', fontWeight: 900 }}>
+              {fmtFpts(winner.totalPts)} pts
+            </span>
+          </div>
+        </div>
+      </div>
+
+      {/* Points by team */}
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(160px, 1fr))', gap: '0.5rem', marginBottom: '1rem' }}>
+        {sorted.map((t, i) => (
+          <div key={t.leagueTeamId} style={{
+            background: 'var(--surface)',
+            border: `1px solid ${t.leagueTeamId === myTeamId ? 'var(--red)' : 'var(--border)'}`,
+            borderRadius: 8, padding: '0.6rem 0.75rem',
+            display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+          }}>
+            <div>
+              <div style={{ fontSize: '0.78rem', fontWeight: 700 }}>{t.teamName}</div>
+              {t.leagueTeamId === myTeamId && (
+                <span style={{ fontSize: '0.58rem', color: 'var(--red)', fontWeight: 800 }}>YOU</span>
+              )}
+            </div>
+            <div style={{ fontSize: '1.3rem', fontWeight: 900, color: i === 0 ? 'gold' : 'var(--text)' }}>
+              {fmtFpts(t.totalPts)}
+            </div>
+          </div>
+        ))}
+      </div>
+
+      {/* Top scorers */}
+      {topPlayers.length > 0 && (
+        <>
+          <div style={{ fontSize: '0.65rem', fontWeight: 900, color: 'var(--muted)', letterSpacing: '0.08em', marginBottom: '0.5rem' }}>
+            🔥 TOP SCORERS THIS WEEK
+          </div>
+          <div className="table-wrap" style={{ marginBottom: '1.5rem' }}>
+            <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.82rem' }}>
+              <thead>
+                <tr style={{ borderBottom: '1px solid var(--border)' }}>
+                  <th style={{ textAlign: 'left', padding: '0.35rem 0.5rem', color: 'var(--muted)', fontWeight: 700, fontSize: '0.65rem' }}>Player</th>
+                  <th style={{ padding: '0.35rem 0.5rem', color: 'var(--muted)', fontWeight: 700, fontSize: '0.65rem' }}>GM</th>
+                  <th style={{ padding: '0.35rem 0.5rem', color: 'var(--muted)', fontWeight: 700, fontSize: '0.65rem' }}>G</th>
+                  <th style={{ padding: '0.35rem 0.5rem', color: 'var(--muted)', fontWeight: 700, fontSize: '0.65rem' }}>A</th>
+                  <th style={{ padding: '0.35rem 0.5rem', color: 'gold', fontWeight: 700, fontSize: '0.65rem' }}>FPTS</th>
+                </tr>
+              </thead>
+              <tbody>
+                {topPlayers.map(p => (
+                  <tr key={`${p.player_id}-${p.teamName}`} style={{ borderBottom: '1px solid var(--surface2)' }}>
+                    <td style={{ padding: '0.4rem 0.5rem', textAlign: 'left' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '0.3rem' }}>
+                        <span style={{ fontWeight: 600 }}>{p.player_name}</span>
+                        <PosBadge pos={p.position} />
+                      </div>
+                      <div style={{ fontSize: '0.65rem', color: 'var(--muted)' }}>{p.player_team_code}</div>
+                    </td>
+                    <td style={{ padding: '0.4rem 0.5rem', textAlign: 'center', fontSize: '0.72rem', color: 'var(--muted)' }}>{p.teamName}</td>
+                    <td style={{ padding: '0.4rem 0.5rem', textAlign: 'center' }}>{p.stats?.g ?? 0}</td>
+                    <td style={{ padding: '0.4rem 0.5rem', textAlign: 'center' }}>{p.stats?.a ?? 0}</td>
+                    <td style={{ padding: '0.4rem 0.5rem', textAlign: 'center', fontWeight: 800, color: 'gold' }}>{fmtFpts(p.fpts)}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </>
+      )}
+    </>
+  );
+}
+
 // ── Head-to-head scoreboard (2 teams) ────────────────────────────────────────
 function HeadToHead({ myTeam, opponent, myTeamId }) {
   const myWinning  = myTeam.totalPts  > opponent.totalPts;
@@ -26,7 +140,7 @@ function HeadToHead({ myTeam, opponent, myTeamId }) {
   const tied       = myTeam.totalPts  === opponent.totalPts;
 
   return (
-    <div style={{
+    <div className="h2h-scoreboard" style={{
       display: 'grid', gridTemplateColumns: '1fr auto 1fr', alignItems: 'center',
       gap: '1rem', background: 'var(--surface)', border: '1px solid var(--border)',
       borderRadius: 12, padding: '1.5rem 1rem', marginBottom: '1.5rem',
@@ -230,6 +344,9 @@ export default function LeagueStandings({ leagueCtx, onBack }) {
               <div style={{ fontSize: '0.75rem', color: 'var(--muted2)', marginTop: '0.3rem' }}>Round 1 begins March 27</div>
             </div>
           )}
+
+          {/* ── Week recap ─────────────────────────────────────────────────── */}
+          <WeekRecap teamScores={teamScores} myTeamId={leagueCtx.leagueTeamId} />
 
           {/* ── Top 5 per team ─────────────────────────────────────────────── */}
           <div className="espn-header" style={{ marginBottom: '0.75rem' }}>

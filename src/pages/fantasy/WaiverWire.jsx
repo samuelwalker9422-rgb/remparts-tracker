@@ -446,7 +446,7 @@ export default function WaiverWire({ leagueCtx, onBack }) {
       </div>
 
       {/* Two-column layout */}
-      <div style={{
+      <div className="waiver-two-col" style={{
         display: 'grid',
         gridTemplateColumns: 'minmax(0, 1fr) minmax(0, 1.4fr)',
         gap: '1.25rem',
@@ -472,7 +472,7 @@ export default function WaiverWire({ leagueCtx, onBack }) {
         </div>
 
         {/* ── RIGHT: Available ───────────────────────────────────────────── */}
-        <div style={{ position: 'sticky', top: '4rem', maxHeight: 'calc(100vh - 6rem)', display: 'flex', flexDirection: 'column' }}>
+        <div className="waiver-right-col" style={{ position: 'sticky', top: '4rem', maxHeight: 'calc(100vh - 6rem)', display: 'flex', flexDirection: 'column' }}>
           <div style={{
             fontSize: '0.65rem', fontWeight: 900, color: 'var(--muted)',
             letterSpacing: '0.08em', marginBottom: '0.5rem',

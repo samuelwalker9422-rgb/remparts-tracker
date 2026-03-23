@@ -80,6 +80,10 @@ export default async function handler(req, res) {
     const rawPo  = poData?.SiteKit?.Schedule  ?? [];
 
     const games        = rawReg.map((g, i) => mapGame(g, i, false));
+    // NOTE: The leaguestat API (season_id=212) returns ALL Remparts playoff games dynamically
+    // as they are scheduled — including Round 2, 3, and Memorial Cup games. Round 2+ matchups
+    // will appear automatically in playoffGames once Round 1 series conclude and pairings are set.
+    // No code changes required to support future rounds.
     const playoffGames = rawPo.map((g, i)  => mapGame(g, i, true));
 
     // Cache 5 min – results appear within minutes of game end

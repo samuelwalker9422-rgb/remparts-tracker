@@ -68,12 +68,21 @@ export default function Schedule({ teamData, onGameRecap }) {
   const losses = rem ? rem.l   : completed.filter(g => g.result === 'L').length;
   const otls   = rem ? rem.otl : completed.filter(g => g.result === 'OTL').length;
 
-  const poCompleted = playoffGames.filter(g => g.result !== 'upcoming');
-  const poUpcoming  = playoffGames.filter(g => g.result === 'upcoming');
-  const hasPlayoffs = playoffGames.length > 0;
-
-  // Opponent is the same for all games in a series — use first entry
-  const poOpponent = playoffGames[0]?.opponent ?? 'Playoffs';
+  // Group playoff games by opponent — each unique opponent = one round
+  const poRounds = [];
+  const oppMap   = new Map();
+  playoffGames.forEach(g => {
+    if (!oppMap.has(g.opponent)) {
+      oppMap.set(g.opponent, poRounds.length);
+      poRounds.push({ opponent: g.opponent, games: [] });
+    }
+    poRounds[oppMap.get(g.opponent)].games.push(g);
+  });
+  const hasPlayoffs = poRounds.length > 0;
+  // Show "Round N+1 TBD" placeholder when the last round has no upcoming games
+  // (Remparts won/lost and next round hasn't been scheduled yet)
+  const lastRound      = poRounds[poRounds.length - 1];
+  const showNextRndTBD = hasPlayoffs && lastRound.games.every(g => g.result !== 'upcoming');
 
   return (
     <div className="page">
@@ -113,58 +122,87 @@ export default function Schedule({ teamData, onGameRecap }) {
       {/* ── PLAYOFFS ─────────────────────────────────────────────────────── */}
       {!loading && hasPlayoffs && (
         <>
-          <div className="espn-header" style={{ marginTop: '0.5rem' }}>
-            <div className="espn-header-bar" style={{ background: 'gold' }} />
-            <h2>🏆 Playoffs — Round 1</h2>
-            <span className="subtitle">vs {poOpponent} · Best of 7</span>
-          </div>
+          {poRounds.map((round, idx) => {
+            const roundNum   = idx + 1;
+            const rUpcoming  = round.games.filter(g => g.result === 'upcoming');
+            const rCompleted = round.games.filter(g => g.result !== 'upcoming');
+            return (
+              <div key={round.opponent}>
+                <div className="espn-header" style={{ marginTop: '0.5rem' }}>
+                  <div className="espn-header-bar" style={{ background: 'gold' }} />
+                  <h2>🏆 Playoffs — Round {roundNum}</h2>
+                  <span className="subtitle">vs {round.opponent} · Best of 7</span>
+                </div>
 
-          {poUpcoming.length > 0 && (
-            <div className="section-gap">
-              {poUpcoming.map(g => {
-                const gameTime = fmtGameTime(g.time, g.tz);
-                return (
-                  <div className="upcoming-card" key={g.id} style={{ borderLeft: '3px solid gold' }}>
-                    <div className="upcoming-date">
-                      <div style={{ fontSize: '0.65rem', fontWeight: 800, color: 'gold', letterSpacing: '0.06em', marginBottom: '2px' }}>
-                        GAME {g.gameNum}
-                      </div>
-                      {fmtFull(g.date)}
-                      {gameTime && <div style={{ fontSize: '0.75rem', color: 'var(--muted)', marginTop: '2px' }}>{gameTime}</div>}
-                    </div>
-                    <div>
-                      <div className="upcoming-opp">{g.home ? 'vs' : '@'} {g.opponent}</div>
-                      <div className="upcoming-loc">{g.home ? '🏒 Home' : '✈️ Away'}</div>
-                    </div>
-                    <span className="badge badge-loc" style={{ marginLeft: 'auto' }}>{g.home ? 'HOME' : 'AWAY'}</span>
+                {rUpcoming.length > 0 && (
+                  <div className="section-gap">
+                    {rUpcoming.map(g => {
+                      const gameTime = fmtGameTime(g.time, g.tz);
+                      return (
+                        <div className="upcoming-card" key={g.id} style={{ borderLeft: '3px solid gold' }}>
+                          <div className="upcoming-date">
+                            <div style={{ fontSize: '0.65rem', fontWeight: 800, color: 'gold', letterSpacing: '0.06em', marginBottom: '2px' }}>
+                              GAME {g.gameNum}
+                            </div>
+                            {fmtFull(g.date)}
+                            {gameTime && <div style={{ fontSize: '0.75rem', color: 'var(--muted)', marginTop: '2px' }}>{gameTime}</div>}
+                          </div>
+                          <div>
+                            <div className="upcoming-opp">{g.home ? 'vs' : '@'} {g.opponent}</div>
+                            <div className="upcoming-loc">{g.home ? '🏒 Home' : '✈️ Away'}</div>
+                          </div>
+                          <span className="badge badge-loc" style={{ marginLeft: 'auto' }}>{g.home ? 'HOME' : 'AWAY'}</span>
+                        </div>
+                      );
+                    })}
                   </div>
-                );
-              })}
-            </div>
-          )}
+                )}
 
-          {poCompleted.length > 0 && (
-            <>
-              <div className="espn-header" style={{ marginTop: '0.75rem' }}>
-                <div className="espn-header-bar" style={{ background: 'gold' }} />
-                <h2>Playoff Results</h2>
-                <span className="subtitle">Most recent first</span>
+                {rCompleted.length > 0 && (
+                  <>
+                    <div className="espn-header" style={{ marginTop: '0.75rem' }}>
+                      <div className="espn-header-bar" style={{ background: 'gold' }} />
+                      <h2>Round {roundNum} Results</h2>
+                      <span className="subtitle">Most recent first</span>
+                    </div>
+                    <div className="table-wrap">
+                      {[...rCompleted].reverse().map(g => (
+                        <div className="game-row" key={g.id} style={{ borderLeft: '3px solid gold' }}>
+                          <span style={{ fontSize: '0.65rem', fontWeight: 800, color: 'gold', minWidth: '3.5rem' }}>
+                            GAME {g.gameNum}
+                          </span>
+                          <span className="game-date">{fmtShort(g.date)}</span>
+                          <span className="badge badge-loc">{g.home ? 'HOME' : 'AWAY'}</span>
+                          <span className="game-opp">{g.home ? 'vs' : '@'} {g.opponent}</span>
+                          <span className="game-score" style={{ color: g.result === 'W' ? 'var(--green)' : g.result === 'L' ? 'var(--red)' : 'var(--orange)' }}>
+                            {g.gf}–{g.ga}
+                          </span>
+                          <span className={`badge badge-${g.result}`}>{g.result}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </>
+                )}
               </div>
-              <div className="table-wrap">
-                {[...poCompleted].reverse().map(g => (
-                  <div className="game-row" key={g.id} style={{ borderLeft: '3px solid gold' }}>
-                    <span style={{ fontSize: '0.65rem', fontWeight: 800, color: 'gold', minWidth: '3.5rem' }}>
-                      GAME {g.gameNum}
-                    </span>
-                    <span className="game-date">{fmtShort(g.date)}</span>
-                    <span className="badge badge-loc">{g.home ? 'HOME' : 'AWAY'}</span>
-                    <span className="game-opp">{g.home ? 'vs' : '@'} {g.opponent}</span>
-                    <span className="game-score" style={{ color: g.result === 'W' ? 'var(--green)' : g.result === 'L' ? 'var(--red)' : 'var(--orange)' }}>
-                      {g.gf}–{g.ga}
-                    </span>
-                    <span className={`badge badge-${g.result}`}>{g.result}</span>
-                  </div>
-                ))}
+            );
+          })}
+
+          {/* Round N+1 TBD placeholder — shown when all current playoff games are final */}
+          {showNextRndTBD && (
+            <>
+              <div className="espn-header" style={{ marginTop: '0.5rem' }}>
+                <div className="espn-header-bar" style={{ background: 'var(--muted2)' }} />
+                <h2>🏆 Playoffs — Round {poRounds.length + 1}</h2>
+              </div>
+              <div style={{
+                background: 'var(--surface)', border: '1px solid var(--border)',
+                borderRadius: 10, padding: '1.25rem', textAlign: 'center',
+                color: 'var(--muted)', marginBottom: '1rem',
+              }}>
+                Round {poRounds.length + 1} matchups to be determined
+                <div style={{ fontSize: '0.75rem', color: 'var(--muted2)', marginTop: '0.35rem' }}>
+                  Matchups appear here automatically once Round {poRounds.length} series conclude
+                </div>
               </div>
             </>
           )}
