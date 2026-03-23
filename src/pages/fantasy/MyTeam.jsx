@@ -131,7 +131,7 @@ function RosterSection({ title, players, allStats, onDrop }) {
 }
 
 // ── Main MyTeam ───────────────────────────────────────────────────────────────
-export default function MyTeam({ leagueCtx, onBack, onSetLines, onWaiverWire }) {
+export default function MyTeam({ leagueCtx, onBack, onSetLines, onWaiverWire, onTradeCenter }) {
   const isPlayoff = leagueCtx.leagueSeason === '2025-26 Playoffs';
 
   // Fantasy scoring — always called (hook rules), only used when isPlayoff
@@ -214,6 +214,18 @@ export default function MyTeam({ leagueCtx, onBack, onSetLines, onWaiverWire }) 
       <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '0.75rem' }}>
         <button onClick={onBack} style={{ background: 'none', border: 'none', color: 'var(--muted)', cursor: 'pointer', fontSize: '0.85rem' }}>← Leagues</button>
         <div style={{ marginLeft: 'auto', display: 'flex', gap: '0.5rem' }}>
+          {onTradeCenter && (
+            <button
+              onClick={e => { e.stopPropagation(); onTradeCenter(); }}
+              style={{
+                background: 'var(--surface2)', border: '1px solid var(--border)',
+                color: 'var(--muted)', borderRadius: 7, padding: '0.35rem 0.85rem',
+                fontSize: '0.82rem', fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit',
+              }}
+            >
+              🤝 Trades
+            </button>
+          )}
           {onWaiverWire && (
             <button
               onClick={e => { e.stopPropagation(); onWaiverWire(); }}

@@ -14,6 +14,7 @@ import MyTeam          from './pages/fantasy/MyTeam';
 import LeagueStandings from './pages/fantasy/LeagueStandings';
 import CoachLines      from './pages/fantasy/CoachLines';
 import WaiverWire      from './pages/fantasy/WaiverWire';
+import TradeCenter     from './pages/fantasy/TradeCenter';
 import { useRosterStats } from './hooks/useRosterStats';
 import { team, skaters as staticSkaters, goalies, schedule, gameLog, goalieLog, playoffSchedule, playoffGameLog } from './data';
 
@@ -79,6 +80,7 @@ export default function App() {
           onBack={() => setPage('Fantasy')}
           onSetLines={() => setPage('CoachLines')}
           onWaiverWire={() => setPage('WaiverWire')}
+          onTradeCenter={() => setPage('TradeCenter')}
         />;
       case 'CoachLines':
         return <CoachLines
@@ -87,6 +89,11 @@ export default function App() {
         />;
       case 'WaiverWire':
         return <WaiverWire
+          leagueCtx={leagueCtx}
+          onBack={() => setPage('MyTeam')}
+        />;
+      case 'TradeCenter':
+        return <TradeCenter
           leagueCtx={leagueCtx}
           onBack={() => setPage('MyTeam')}
         />;
