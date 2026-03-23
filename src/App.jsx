@@ -13,6 +13,7 @@ import DraftRoom       from './pages/fantasy/DraftRoom';
 import MyTeam          from './pages/fantasy/MyTeam';
 import LeagueStandings from './pages/fantasy/LeagueStandings';
 import CoachLines      from './pages/fantasy/CoachLines';
+import WaiverWire      from './pages/fantasy/WaiverWire';
 import { useRosterStats } from './hooks/useRosterStats';
 import { team, skaters as staticSkaters, goalies, schedule, gameLog, goalieLog, playoffSchedule, playoffGameLog } from './data';
 
@@ -77,9 +78,15 @@ export default function App() {
           leagueCtx={leagueCtx}
           onBack={() => setPage('Fantasy')}
           onSetLines={() => setPage('CoachLines')}
+          onWaiverWire={() => setPage('WaiverWire')}
         />;
       case 'CoachLines':
         return <CoachLines
+          leagueCtx={leagueCtx}
+          onBack={() => setPage('MyTeam')}
+        />;
+      case 'WaiverWire':
+        return <WaiverWire
           leagueCtx={leagueCtx}
           onBack={() => setPage('MyTeam')}
         />;
