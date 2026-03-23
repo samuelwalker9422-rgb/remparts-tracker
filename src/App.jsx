@@ -12,6 +12,7 @@ import LeagueHub       from './pages/fantasy/LeagueHub';
 import DraftRoom       from './pages/fantasy/DraftRoom';
 import MyTeam          from './pages/fantasy/MyTeam';
 import LeagueStandings from './pages/fantasy/LeagueStandings';
+import CoachLines      from './pages/fantasy/CoachLines';
 import { useRosterStats } from './hooks/useRosterStats';
 import { team, skaters as staticSkaters, goalies, schedule, gameLog, goalieLog, playoffSchedule, playoffGameLog } from './data';
 
@@ -75,6 +76,12 @@ export default function App() {
         return <MyTeam
           leagueCtx={leagueCtx}
           onBack={() => setPage('Fantasy')}
+          onSetLines={() => setPage('CoachLines')}
+        />;
+      case 'CoachLines':
+        return <CoachLines
+          leagueCtx={leagueCtx}
+          onBack={() => setPage('MyTeam')}
         />;
       case 'LeagueStandings':
         return <LeagueStandings

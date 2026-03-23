@@ -131,7 +131,7 @@ function RosterSection({ title, players, allStats, onDrop }) {
 }
 
 // ── Main MyTeam ───────────────────────────────────────────────────────────────
-export default function MyTeam({ leagueCtx, onBack }) {
+export default function MyTeam({ leagueCtx, onBack, onSetLines }) {
   const isPlayoff = leagueCtx.leagueSeason === '2025-26 Playoffs';
 
   // Fantasy scoring — always called (hook rules), only used when isPlayoff
@@ -213,6 +213,18 @@ export default function MyTeam({ leagueCtx, onBack }) {
 
       <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '0.75rem' }}>
         <button onClick={onBack} style={{ background: 'none', border: 'none', color: 'var(--muted)', cursor: 'pointer', fontSize: '0.85rem' }}>← Leagues</button>
+        {isPlayoff && onSetLines && (
+          <button
+            onClick={e => { e.stopPropagation(); onSetLines(); }}
+            style={{
+              marginLeft: 'auto', background: 'rgba(204,0,0,0.12)', border: '1px solid rgba(204,0,0,0.3)',
+              color: 'var(--red)', borderRadius: 7, padding: '0.35rem 0.85rem',
+              fontSize: '0.82rem', fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit',
+            }}
+          >
+            🏒 Set Lines
+          </button>
+        )}
       </div>
 
       <div className="espn-header">
