@@ -1,4 +1,7 @@
-// Sends a Web Push notification to a specific user.
+// Dual-purpose endpoint:
+//   GET  /api/push-notify  → returns VAPID public key (safe to expose)
+//   POST /api/push-notify  → sends a Web Push notification to a specific user
+//
 // Required env vars:
 //   VAPID_PUBLIC_KEY, VAPID_PRIVATE_KEY, VAPID_EMAIL
 //   SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY
@@ -7,7 +10,7 @@ import webPush from 'web-push';
 
 const CORS = {
   'Access-Control-Allow-Origin':  '*',
-  'Access-Control-Allow-Methods': 'POST, OPTIONS',
+  'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
   'Access-Control-Allow-Headers': 'Content-Type',
 };
 
@@ -18,7 +21,16 @@ function setCors(res) {
 export default async function handler(req, res) {
   setCors(res);
   if (req.method === 'OPTIONS') return res.status(204).end();
-  if (req.method !== 'POST')    return res.status(405).json({ error: 'Method not allowed' });
+
+  // ── GET: return VAPID public key ──────────────────────────────────────────
+  if (req.method === 'GET') {
+    const key = process.env.VAPID_PUBLIC_KEY;
+    if (!key) return res.status(500).json({ error: 'VAPID_PUBLIC_KEY not configured' });
+    res.setHeader('Cache-Control', 'public, max-age=86400');
+    return res.status(200).json({ publicKey: key });
+  }
+
+  if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
 
   const { userId, title, body, url } = req.body ?? {};
   if (!userId || !title) return res.status(400).json({ error: 'userId and title required' });

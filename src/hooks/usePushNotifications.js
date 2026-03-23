@@ -7,7 +7,7 @@ import { supabase } from '../lib/supabase';
 let cachedVapidKey = null;
 async function getVapidKey() {
   if (cachedVapidKey) return cachedVapidKey;
-  const res = await fetch('/api/vapid-key');
+  const res = await fetch('/api/push-notify');  // GET returns the public key
   if (!res.ok) throw new Error('Failed to fetch VAPID public key');
   const { publicKey } = await res.json();
   cachedVapidKey = publicKey;
