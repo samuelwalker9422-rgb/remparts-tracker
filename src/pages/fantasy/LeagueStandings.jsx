@@ -1,4 +1,7 @@
+import { useRef, useState, useEffect } from 'react';
+import { supabase } from '../../lib/supabase';
 import { useFantasyScoring } from '../../hooks/useFantasyScoring';
+import { usePushNotifications } from '../../hooks/usePushNotifications';
 
 function currentWeek() {
   const start = new Date('2026-03-27T00:00:00');
@@ -280,6 +283,42 @@ function TopPlayers({ team }) {
 // ── Main LeagueStandings ──────────────────────────────────────────────────────
 export default function LeagueStandings({ leagueCtx, onBack }) {
   const { teamScores, loading, error, lastUpdated, refresh } = useFantasyScoring(leagueCtx.leagueId);
+  const { notify } = usePushNotifications();
+
+  // Track current user ID for directing notifications
+  const [userId, setUserId] = useState(null);
+  useEffect(() => {
+    supabase.auth.getUser().then(({ data: { user } }) => { if (user) setUserId(user.id); });
+  }, []);
+
+  // Detect score changes and push notifications
+  const prevScoresRef = useRef(null);
+  useEffect(() => {
+    if (!teamScores.length || !userId) return;
+    const myTeam = teamScores.find(t => t.leagueTeamId === leagueCtx.leagueTeamId);
+    if (!myTeam) { prevScoresRef.current = teamScores; return; }
+
+    const prev = prevScoresRef.current;
+    if (prev) {
+      const prevMy = prev.find(t => t.leagueTeamId === leagueCtx.leagueTeamId);
+      if (prevMy && myTeam.totalPts > prevMy.totalPts) {
+        // Find players whose score improved
+        const scorers = myTeam.playerBreakdown
+          .filter(p => {
+            const pp = prevMy.playerBreakdown.find(x => x.player_id === p.player_id);
+            return pp && p.fpts > pp.fpts;
+          })
+          .map(p => p.player_name.split(' ').pop()); // last name only
+
+        const title = `📊 ${myTeam.teamName}`;
+        const body  = scorers.length
+          ? `${scorers.slice(0, 3).join(', ')}${scorers.length > 3 ? ` +${scorers.length - 3} more` : ''} scored · ${fmtFpts(myTeam.totalPts)} pts total`
+          : `Score updated: ${fmtFpts(myTeam.totalPts)} pts`;
+        notify(userId, title, body);
+      }
+    }
+    prevScoresRef.current = teamScores;
+  }, [teamScores, userId, leagueCtx.leagueTeamId, notify]);
 
   const myTeam   = teamScores.find(t => t.leagueTeamId === leagueCtx.leagueTeamId);
   const others   = teamScores.filter(t => t.leagueTeamId !== leagueCtx.leagueTeamId);

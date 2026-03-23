@@ -1,6 +1,44 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '../../lib/supabase';
 import AuthModal from '../../components/AuthModal';
+import { usePushNotifications } from '../../hooks/usePushNotifications';
+
+// ── Notification toggle bar ────────────────────────────────────────────────────
+function NotifBar() {
+  const { supported, enabled, loading, error, enable, disable } = usePushNotifications();
+  if (!supported) return null;
+  return (
+    <div style={{
+      display: 'flex', alignItems: 'center', gap: '0.75rem',
+      background: 'var(--surface)', border: '1px solid var(--border)',
+      borderRadius: 8, padding: '0.65rem 1rem', marginBottom: '1rem',
+    }}>
+      <span style={{ fontSize: '1rem' }}>🔔</span>
+      <div style={{ flex: 1 }}>
+        <div style={{ fontSize: '0.82rem', fontWeight: 700 }}>Game notifications</div>
+        <div style={{ fontSize: '0.72rem', color: 'var(--muted)', marginTop: '0.1rem' }}>
+          {enabled ? 'Score updates will be pushed to this device' : 'Get notified when your fantasy score updates'}
+        </div>
+        {error && <div style={{ fontSize: '0.7rem', color: 'var(--red)', marginTop: '0.2rem' }}>{error}</div>}
+      </div>
+      <button
+        onClick={enabled ? disable : enable}
+        disabled={loading}
+        style={{
+          padding: '0.35rem 0.85rem', borderRadius: 6, fontFamily: 'inherit',
+          fontWeight: 700, fontSize: '0.78rem', cursor: loading ? 'not-allowed' : 'pointer',
+          opacity: loading ? 0.6 : 1, border: '1px solid',
+          background:   enabled ? 'rgba(0,166,81,0.12)'   : 'var(--surface2)',
+          borderColor:  enabled ? 'rgba(0,166,81,0.35)'   : 'var(--border)',
+          color:        enabled ? 'var(--green)'           : 'var(--muted)',
+          transition: 'all 0.15s',
+        }}
+      >
+        {loading ? '…' : enabled ? '✓ Enabled' : 'Enable'}
+      </button>
+    </div>
+  );
+}
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 const STATUS_LABEL = { setup: 'Setup', drafting: 'Drafting', active: 'Active', complete: 'Complete' };
@@ -384,6 +422,8 @@ export default function LeagueHub({ onEnterLeague, onTonightPickup, onStandings 
         <h2>Fantasy GM Mode</h2>
         <span className="subtitle">QMJHL League Manager · {user?.email}</span>
       </div>
+
+      <NotifBar />
 
       {/* ── No leagues yet ──────────────────────────────────────────────── */}
       {leagues.length === 0 && (
